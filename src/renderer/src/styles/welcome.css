@@ -1,0 +1,201 @@
+.welcome {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  background:
+    radial-gradient(1200px 500px at 50% -10%, var(--mpp-accent-soft), transparent 70%),
+    var(--mpp-ui-editor-background);
+}
+
+.welcome-inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mpp-space-6);
+  width: min(560px, 100%);
+  margin: 0 auto;
+  padding: 10vh var(--mpp-space-5) var(--mpp-space-7);
+  animation: mpp-pop-in 320ms var(--mpp-ease);
+}
+
+.welcome-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--mpp-space-3);
+  text-align: center;
+}
+
+.welcome-hero .logo-mark {
+  filter: drop-shadow(0 12px 28px color-mix(in srgb, var(--mpp-ui-accent) 35%, transparent));
+}
+
+.welcome-title {
+  font-size: 34px;
+  font-weight: 750;
+  letter-spacing: -0.035em;
+}
+
+.welcome-tagline {
+  color: var(--mpp-ui-text-muted);
+  font-size: var(--mpp-text-lg);
+}
+
+.welcome-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mpp-space-2);
+}
+
+.welcome-action {
+  display: flex;
+  align-items: center;
+  gap: var(--mpp-space-3);
+  height: 48px;
+  padding: 0 var(--mpp-space-4);
+  border: 1px solid var(--mpp-ui-border);
+  border-radius: var(--mpp-radius-lg);
+  background: var(--mpp-ui-surface-elevated);
+  box-shadow: var(--mpp-shadow-sm);
+  color: var(--mpp-ui-text);
+  text-align: left;
+  transition:
+    border-color var(--mpp-duration) var(--mpp-ease),
+    transform var(--mpp-duration) var(--mpp-ease),
+    box-shadow var(--mpp-duration) var(--mpp-ease);
+}
+
+.welcome-action svg {
+  color: var(--mpp-ui-accent);
+}
+
+.welcome-action:hover {
+  border-color: color-mix(in srgb, var(--mpp-ui-accent) 55%, var(--mpp-ui-border));
+  box-shadow: var(--mpp-shadow-md);
+  transform: translateY(-1px);
+}
+
+.welcome-action-label {
+  flex: 1;
+  font-size: var(--mpp-text-lg);
+  font-weight: 500;
+}
+
+.welcome-action-hint {
+  color: var(--mpp-ui-text-faint);
+  font-size: var(--mpp-text-sm);
+}
+
+.welcome-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mpp-space-2);
+}
+
+.welcome-section-title {
+  color: var(--mpp-ui-text-faint);
+  font-size: var(--mpp-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.welcome-recent,
+.welcome-hints {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.welcome-recent-item {
+  display: flex;
+  align-items: center;
+  gap: var(--mpp-space-2);
+  width: 100%;
+  height: 32px;
+  padding: 0 var(--mpp-space-2);
+  border: 0;
+  border-radius: var(--mpp-radius-sm);
+  background: transparent;
+  color: var(--mpp-ui-text);
+  text-align: left;
+}
+
+.welcome-recent-item:hover {
+  background: var(--mpp-hover);
+}
+
+.welcome-recent-item svg {
+  flex: none;
+  color: var(--mpp-ui-text-faint);
+}
+
+.welcome-recent-name {
+  flex: none;
+  max-width: 50%;
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.welcome-recent-dir {
+  flex: 1;
+  overflow: hidden;
+  color: var(--mpp-ui-text-faint);
+  font-size: var(--mpp-text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+}
+
+/* A plain reference list (not cards): the hints are not clickable. */
+.welcome-hints {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0 var(--mpp-space-5);
+}
+
+.welcome-hints li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mpp-space-2);
+  padding: var(--mpp-space-2) 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--mpp-ui-border) 60%, transparent);
+  color: var(--mpp-ui-text-muted);
+  font-size: var(--mpp-text-sm);
+}
+
+.welcome-hints .welcome-hint-note {
+  grid-column: 1 / -1;
+  justify-content: center;
+  border-bottom: 0;
+  color: var(--mpp-ui-text-faint);
+}
+
+.welcome-startup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mpp-space-2);
+  color: var(--mpp-ui-text-faint);
+  font-size: var(--mpp-text-sm);
+}
+
+.welcome-startup input {
+  accent-color: var(--mpp-ui-accent);
+}
+
+/* The logo is drawn with theme colours. */
+.logo-mark-stop-a {
+  stop-color: var(--mpp-ui-accent);
+}
+
+.logo-mark-stop-b {
+  stop-color: color-mix(in srgb, var(--mpp-ui-accent) 55%, var(--mpp-ui-link));
+}
+
+.logo-mark-glyph {
+  stroke: var(--mpp-ui-accent-text);
+}

@@ -1,0 +1,1415 @@
+/*
+ * MarkDown++ element styles.
+ *
+ * Styles every rendered markdown element inside `.mpp-document`: the live WYSIWYG
+ * editor (Milkdown/Crepe DOM: `.mpp-document .milkdown .ProseMirror …`) and exported
+ * HTML (`article.mpp-document.mpp-export`). Values come from the
+ * `--mpp-ui-*`, `--mpp-code-*` and `--mpp-el-*` variables; variants are selected by
+ * the `data-mpp-*` attributes that the theme engine sets on the document root.
+ *
+ * Every rule is scoped with
+ *   :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+ * - the first branch matches static documents (export, previews) but not the WYSIWYG
+ *   host, so Crepe's menus and tooltips (children of `.milkdown`) are never styled
+ *   as document content;
+ * - the second branch matches the editable Crepe surface. Being the most specific
+ *   argument, it lifts every rule to at least (0,3,0), so these rules reliably win
+ *   over Crepe's own `.milkdown .ProseMirror …` defaults regardless of stylesheet order.
+ */
+
+/* ── Document surface & typography ─────────────────────────────────────────── */
+
+.mpp-document {
+  color: var(--mpp-ui-editor-text);
+  font-family: var(--mpp-el-body-font);
+  font-size: var(--mpp-el-base-font-size);
+  line-height: var(--mpp-el-line-height);
+  font-feature-settings: 'kern', 'liga', 'calt';
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-wrap: break-word;
+  hyphens: manual;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) ::selection {
+  background: var(--mpp-ui-selection);
+}
+
+/* Reset user-agent margins (zero specificity inside the scope, so the flow rules below win). */
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :where(p, figure, blockquote, ul, ol, dl, pre, table, details) {
+  margin: 0;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) > * {
+  margin-block: 0;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) > * + * {
+  margin-top: var(--mpp-el-paragraph-spacing);
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) > :first-child {
+  margin-top: 0;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) p {
+  padding: 0;
+  font-size: 1em;
+  line-height: var(--mpp-el-line-height);
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) :is(li, td, th) p {
+  margin: 0;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :is(blockquote, li:not(.list-item), .content-dom, details)
+  > *
+  + * {
+  margin-top: calc(var(--mpp-el-paragraph-spacing) * 0.6);
+}
+
+/* ── Headings ─────────────────────────────────────────────────────────────── */
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) :is(h1, h2, h3, h4, h5, h6) {
+  padding: 0;
+  font-family: var(--mpp-el-heading-font);
+  font-weight: var(--mpp-el-heading-weight);
+  letter-spacing: var(--mpp-el-heading-letter-spacing);
+  color: var(--mpp-el-heading-color);
+  line-height: 1.25;
+  text-wrap: balance;
+  scroll-margin-top: 24px;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  > :is(h1, h2, h3, h4, h5, h6) {
+  margin-top: calc(var(--mpp-el-base-font-size) * 1.9);
+  margin-bottom: calc(var(--mpp-el-base-font-size) * 0.7);
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  > :is(h1, h2, h3, h4, h5, h6):first-child {
+  margin-top: 0;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  > :is(h1, h2, h3, h4, h5, h6)
+  + * {
+  margin-top: 0;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) h1 {
+  font-size: var(--mpp-el-h1-size);
+  line-height: 1.15;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) h2 {
+  font-size: var(--mpp-el-h2-size);
+  line-height: 1.2;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) h3 {
+  font-size: var(--mpp-el-h3-size);
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) h4 {
+  font-size: var(--mpp-el-h4-size);
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) h5 {
+  font-size: var(--mpp-el-h5-size);
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) h6 {
+  font-size: var(--mpp-el-h6-size);
+  color: color-mix(in srgb, var(--mpp-el-heading-color) 78%, var(--mpp-ui-editor-background));
+}
+
+:is([data-mpp-heading-underline='h1'], [data-mpp-heading-underline='h1-h2'])
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  h1,
+[data-mpp-heading-underline='h1-h2']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  h2 {
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--mpp-ui-border);
+}
+
+[data-mpp-uppercase-small='true']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :is(h4, h5, h6) {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+[data-mpp-uppercase-small='true']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :is(h5, h6) {
+  font-size: 0.8em;
+}
+
+[data-mpp-element-style='book']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :is(h1, h2, h3) {
+  text-align: center;
+}
+
+[data-mpp-element-style='book']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  h1 {
+  font-variant-caps: small-caps;
+  letter-spacing: 0.04em;
+}
+
+[data-mpp-element-style='editorial']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  h1 {
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+
+[data-mpp-element-style='playful']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  h1 {
+  background: linear-gradient(
+    100deg,
+    var(--mpp-ui-accent),
+    color-mix(in srgb, var(--mpp-ui-accent) 55%, var(--mpp-ui-link))
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ── Inline formatting ────────────────────────────────────────────────────── */
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) :is(strong, b) {
+  font-weight: 700;
+  color: inherit;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) :is(em, i) {
+  font-style: italic;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) :is(del, s) {
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, currentColor 65%, transparent);
+  text-decoration-thickness: 1.5px;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) mark {
+  padding: 0.05em 0.2em;
+  border-radius: 0.25em;
+  background: var(--mpp-ui-mark);
+  color: inherit;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) kbd {
+  display: inline-block;
+  padding: 0.1em 0.45em;
+  border: 1px solid var(--mpp-ui-border-strong);
+  border-bottom-width: 2px;
+  border-radius: 0.35em;
+  background: var(--mpp-ui-surface-sunken);
+  color: var(--mpp-ui-text);
+  font-family: var(--mpp-el-mono-font);
+  font-size: 0.8em;
+  line-height: 1.4;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) :is(sub, sup) {
+  font-size: 0.75em;
+  line-height: 0;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) abbr[title] {
+  text-decoration: underline dotted;
+  cursor: help;
+}
+
+/* ── Links ────────────────────────────────────────────────────────────────── */
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) a {
+  color: var(--mpp-ui-link);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  transition:
+    color 120ms ease,
+    text-decoration-color 120ms ease;
+  cursor: pointer;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) a:hover {
+  text-decoration-color: currentColor;
+}
+
+[data-mpp-link='hover'] :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) a {
+  text-decoration-color: transparent;
+}
+
+[data-mpp-link='hover']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  a:hover {
+  text-decoration-color: currentColor;
+}
+
+[data-mpp-link='accent'] :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) a {
+  font-weight: 500;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.24em;
+  text-decoration-color: color-mix(in srgb, var(--mpp-ui-link) 30%, transparent);
+}
+
+[data-mpp-link='accent']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  a:hover {
+  text-decoration-color: var(--mpp-ui-link);
+}
+
+[data-mpp-link='dotted'] :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) a {
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: currentColor;
+}
+
+/* ── Inline code ──────────────────────────────────────────────────────────── */
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) :not(pre) > code {
+  display: inline;
+  padding: 0.12em 0.4em;
+  border-radius: 0.4em;
+  background: var(--mpp-ui-inline-code-background);
+  color: var(--mpp-ui-inline-code-text);
+  font-family: var(--mpp-el-mono-font);
+  font-size: 0.86em;
+  line-height: inherit;
+  font-variant-ligatures: none;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :is(h1, h2, h3, h4, h5, h6)
+  > code {
+  font-size: 0.82em;
+}
+
+[data-mpp-inline-code='outlined']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :not(pre)
+  > code {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--mpp-ui-border-strong);
+}
+
+[data-mpp-inline-code='plain']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :not(pre)
+  > code {
+  padding: 0;
+  background: none;
+  border-radius: 0;
+}
+
+[data-mpp-inline-code='underline']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :not(pre)
+  > code {
+  padding: 0 0.1em;
+  border-radius: 0;
+  background: none;
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--mpp-ui-inline-code-text) 40%, transparent);
+}
+
+/* ── Code blocks ──────────────────────────────────────────────────────────── */
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :is(.mpp-code-block, .milkdown-code-block) {
+  position: relative;
+  padding: 0;
+  border-radius: var(--mpp-el-code-radius);
+  background: var(--mpp-code-background);
+  color: var(--mpp-code-foreground);
+  font-size: var(--mpp-el-code-font-size);
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) .mpp-code-block {
+  overflow: hidden;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) > pre,
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) .mpp-code-block pre {
+  margin: 0;
+  padding: 0.95em 1.15em 1.05em;
+  overflow-x: auto;
+  background: transparent;
+  border-radius: 0;
+  color: inherit;
+  font-family: var(--mpp-el-mono-font);
+  font-size: inherit;
+  line-height: 1.6;
+  tab-size: 2;
+  white-space: pre;
+  font-variant-ligatures: contextual;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) > pre {
+  border-radius: var(--mpp-el-code-radius);
+  background: var(--mpp-code-background);
+  color: var(--mpp-code-foreground);
+  font-size: var(--mpp-el-code-font-size);
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) pre code {
+  display: block;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  white-space: inherit;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) .mpp-code-lang {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.75em 1.15em 0;
+  color: color-mix(in srgb, var(--mpp-code-foreground) 55%, var(--mpp-code-background));
+  font-family: var(--mpp-el-mono-font);
+  font-size: 0.78em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) .mpp-code-lang + pre {
+  padding-top: 0.55em;
+}
+
+[data-mpp-code-show-language='false']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .mpp-code-lang {
+  display: none;
+}
+
+[data-mpp-code-show-language='false']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .mpp-code-lang
+  + pre {
+  padding-top: 0.95em;
+}
+
+/* Export line numbers (lines wrapped in `.mpp-code-line`). */
+[data-mpp-code-line-numbers='true']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .mpp-code-block
+  pre
+  code {
+  counter-reset: mpp-code-line;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) .mpp-code-line {
+  display: inline;
+}
+
+[data-mpp-code-line-numbers='true']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .mpp-code-line::before {
+  display: inline-block;
+  width: 2.6em;
+  margin-right: 1.1em;
+  margin-left: -0.35em;
+  padding-right: 0.8em;
+  border-right: 1px solid color-mix(in srgb, var(--mpp-code-border) 70%, transparent);
+  color: var(--mpp-code-gutter-foreground);
+  content: counter(mpp-code-line);
+  counter-increment: mpp-code-line;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+/* Variant: bordered */
+[data-mpp-codeblock='bordered']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :is(.mpp-code-block, .milkdown-code-block),
+[data-mpp-codeblock='bordered']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  > pre {
+  box-shadow: inset 0 0 0 1px var(--mpp-code-border);
+}
+
+/* Variant: shadow (floating card) */
+[data-mpp-codeblock='shadow']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :is(.mpp-code-block, .milkdown-code-block),
+[data-mpp-codeblock='shadow']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  > pre {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--mpp-code-border) 80%, transparent),
+    0 2px 4px rgb(0 0 0 / 0.14),
+    0 14px 32px -12px rgb(0 0 0 / 0.45);
+}
+
+[data-mpp-theme-kind='light'][data-mpp-codeblock='shadow']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :is(.mpp-code-block, .milkdown-code-block),
+[data-mpp-theme-kind='light'][data-mpp-codeblock='shadow']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  > pre {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--mpp-code-border) 90%, transparent),
+    0 1px 2px rgb(15 23 42 / 0.06),
+    0 12px 28px -12px rgb(15 23 42 / 0.22);
+}
+
+/* Variant: window (title bar with traffic lights) */
+[data-mpp-codeblock='window']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :is(.mpp-code-block, .milkdown-code-block) {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--mpp-code-border) 85%, transparent),
+    0 12px 30px -14px rgb(0 0 0 / 0.4);
+}
+
+[data-mpp-codeblock='window']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :is(.mpp-code-block, .milkdown-code-block)::before {
+  display: block;
+  height: 2.6rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--mpp-code-border) 85%, transparent);
+  border-radius: var(--mpp-el-code-radius) var(--mpp-el-code-radius) 0 0;
+  background:
+    radial-gradient(circle at 1.25rem 50%, #ff5f57 0.34rem, transparent 0.38rem),
+    radial-gradient(circle at 2.35rem 50%, #febc2e 0.34rem, transparent 0.38rem),
+    radial-gradient(circle at 3.45rem 50%, #28c840 0.34rem, transparent 0.38rem),
+    color-mix(in srgb, var(--mpp-code-foreground) 5%, var(--mpp-code-background));
+  content: '';
+}
+
+[data-mpp-codeblock='window']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .mpp-code-lang {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 2.6rem;
+  padding: 0 1.1em;
+}
+
+[data-mpp-codeblock='window']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .mpp-code-lang
+  + pre {
+  padding-top: 0.95em;
+}
+
+/* ── Code blocks: Crepe editor specifics ──────────────────────────────────── */
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-code-block
+  .cm-editor,
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-code-block
+  .cm-gutters {
+  background: transparent;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-code-block
+  .cm-scroller {
+  font-family: var(--mpp-el-mono-font);
+  font-size: inherit;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-code-block
+  .cm-content {
+  padding: 0.35em 0 0.95em;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-code-block
+  .cm-line {
+  padding: 0 1.15em;
+}
+
+[data-mpp-code-line-numbers='true']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-code-block
+  .cm-gutters
+  + .cm-content
+  .cm-line {
+  padding-left: 0.6em;
+}
+
+[data-mpp-code-line-numbers='false']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-code-block
+  .cm-gutters {
+  display: none;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-code-block
+  .cm-activeLine,
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-code-block
+  .cm-activeLineGutter {
+  background: transparent;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-code-block.selected {
+  outline: 2px solid var(--mpp-ui-focus-ring);
+  outline-offset: 2px;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-code-block
+  .milkdown-code-block-placeholder {
+  padding: 0.35em 1.15em 0.95em;
+  font-family: var(--mpp-el-mono-font);
+  font-size: inherit;
+}
+
+[data-mpp-codeblock='window']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-code-block
+  .tools {
+  position: absolute;
+  top: 0;
+  left: 4.4rem;
+  right: 0.6rem;
+  height: 2.6rem;
+  padding: 0;
+}
+
+/* ── Blockquotes ──────────────────────────────────────────────────────────── */
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) blockquote {
+  position: relative;
+  box-sizing: border-box;
+  margin-inline: 0;
+  padding: 0.15em 0 0.15em 1.15em;
+  border-left: 3px solid var(--mpp-ui-quote-bar);
+  color: inherit;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) blockquote::before {
+  content: none;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) blockquote blockquote {
+  margin-top: 0.6em;
+}
+
+[data-mpp-quote-italic='true']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  blockquote {
+  font-style: italic;
+}
+
+[data-mpp-quote='card']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  blockquote {
+  padding: 0.95em 1.25em;
+  border: 0;
+  border-radius: 0.75em;
+  background: var(--mpp-ui-quote-background);
+  box-shadow:
+    inset 3px 0 0 var(--mpp-ui-quote-bar),
+    inset 0 0 0 1px color-mix(in srgb, var(--mpp-ui-quote-bar) 18%, transparent);
+}
+
+[data-mpp-quote='quote-mark']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  blockquote {
+  padding: 0.2em 0 0.2em 2.4em;
+  border: 0;
+  font-size: 1.1em;
+  line-height: calc(var(--mpp-el-line-height) * 0.95);
+}
+
+[data-mpp-quote='quote-mark']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  blockquote::before {
+  position: absolute;
+  top: -0.12em;
+  bottom: auto;
+  left: -0.05em;
+  width: auto;
+  border-radius: 0;
+  background: none;
+  color: var(--mpp-ui-quote-bar);
+  content: '\201C';
+  font-family: var(--mpp-el-heading-font);
+  font-size: 3.4em;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+[data-mpp-quote='minimal']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  blockquote {
+  padding: 0 1.5em;
+  border: 0;
+  color: var(--mpp-ui-text-muted);
+}
+
+[data-mpp-quote='callout']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  blockquote {
+  padding: 0.9em 1.15em 0.9em 3.1em;
+  border: 1px solid color-mix(in srgb, var(--mpp-ui-accent) 28%, transparent);
+  border-radius: 0.6em;
+  background: color-mix(in srgb, var(--mpp-ui-accent) 8%, var(--mpp-ui-editor-background));
+}
+
+[data-mpp-quote='callout']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  blockquote::before {
+  display: grid;
+  position: absolute;
+  top: 1.05em;
+  bottom: auto;
+  left: 1.05em;
+  width: 1.35em;
+  height: 1.35em;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--mpp-ui-accent);
+  color: var(--mpp-ui-accent-text);
+  content: 'i';
+  font-family: var(--mpp-el-heading-font);
+  font-size: 0.8em;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* ── Lists ────────────────────────────────────────────────────────────────── */
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) :is(ul, ol) {
+  padding-left: 1.6em;
+}
+
+/* Lists that belong to Crepe's editing chrome (code block language picker). */
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-code-block
+  .language-list {
+  padding: 0;
+  list-style: none;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-code-block
+  .language-list
+  .language-list-item {
+  margin-top: 0;
+}
+
+/* Crepe renders its own list labels, so its lists need no marker gutter. */
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :is(ul, ol):has(> .milkdown-list-item-block) {
+  padding-left: 0;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :is(li + li, .milkdown-list-item-block + .milkdown-list-item-block) {
+  margin-top: var(--mpp-el-list-spacing);
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) li > :is(ul, ol) {
+  margin-top: var(--mpp-el-list-spacing);
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) li::marker {
+  color: var(--mpp-ui-text-muted);
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) ol > li::marker {
+  font-variant-numeric: tabular-nums;
+}
+
+[data-mpp-bullet='disc'] :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) ul {
+  list-style-type: disc;
+}
+
+[data-mpp-bullet='disc']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  ul
+  ul {
+  list-style-type: circle;
+}
+
+[data-mpp-bullet='disc']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  ul
+  ul
+  ul {
+  list-style-type: square;
+}
+
+[data-mpp-bullet='circle']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  ul {
+  list-style-type: circle;
+}
+
+[data-mpp-bullet='square']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  ul {
+  list-style-type: square;
+}
+
+[data-mpp-bullet='dash'] :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) ul {
+  list-style-type: '\2013\2002';
+}
+
+[data-mpp-bullet='arrow'] :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) ul {
+  list-style-type: '\2192\2002';
+}
+
+/* Task lists (export HTML) */
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) .contains-task-list {
+  padding-left: 1.6em;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) li.task-list-item {
+  list-style: none;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .task-list-item
+  > input[type='checkbox'] {
+  display: inline-grid;
+  position: relative;
+  top: 0.14em;
+  width: 1.05em;
+  height: 1.05em;
+  margin: 0 0.55em 0 -1.6em;
+  place-content: center;
+  border: 1.5px solid var(--mpp-ui-border-strong);
+  border-radius: 0.3em;
+  background: var(--mpp-ui-editor-background);
+  vertical-align: baseline;
+  appearance: none;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .task-list-item
+  > input[type='checkbox']:checked {
+  border-color: var(--mpp-ui-accent);
+  background: var(--mpp-ui-accent);
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .task-list-item
+  > input[type='checkbox']:checked::before {
+  width: 0.28em;
+  height: 0.52em;
+  margin-top: -0.12em;
+  border: solid var(--mpp-ui-accent-text);
+  border-width: 0 0.13em 0.13em 0;
+  content: '';
+  transform: rotate(45deg);
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .task-list-item:has(> input:checked) {
+  color: var(--mpp-ui-text-muted);
+}
+
+/* Lists (Crepe editor) */
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  > .list-item {
+  gap: 0.45em;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  .label-wrapper {
+  width: 1.4em;
+  height: calc(1em * var(--mpp-el-line-height));
+  flex-shrink: 0;
+  color: var(--mpp-ui-text-muted);
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  .label-wrapper
+  .label {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  place-items: center end;
+  color: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  .label.bullet,
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  .label.checked,
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  .label.unchecked {
+  place-items: center;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  .label:is(.bullet, .checked, .unchecked)
+  > svg {
+  display: none;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  .label.bullet::before {
+  width: 0.36em;
+  height: 0.36em;
+  border-radius: 50%;
+  background: currentColor;
+  content: '';
+}
+
+[data-mpp-bullet='disc']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  .milkdown-list-item-block
+  .label.bullet::before,
+[data-mpp-bullet='circle']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  .label.bullet::before {
+  box-sizing: border-box;
+  border: 0.09em solid currentColor;
+  background: transparent;
+}
+
+[data-mpp-bullet='disc']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  .milkdown-list-item-block
+  .milkdown-list-item-block
+  .label.bullet::before,
+[data-mpp-bullet='square']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  .label.bullet::before {
+  width: 0.34em;
+  height: 0.34em;
+  border: 0;
+  border-radius: 0.06em;
+  background: currentColor;
+}
+
+[data-mpp-bullet='dash']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  .label.bullet::before {
+  width: 0.6em;
+  height: 0.1em;
+  border-radius: 1em;
+}
+
+[data-mpp-bullet='arrow']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  .label.bullet::before {
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: none;
+  content: '\2192';
+  font-size: 0.95em;
+  line-height: 1;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  .label:is(.checked, .unchecked) {
+  cursor: pointer;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  .label:is(.checked, .unchecked)::before {
+  display: grid;
+  box-sizing: border-box;
+  width: 1.05em;
+  height: 1.05em;
+  place-items: center;
+  border: 1.5px solid var(--mpp-ui-border-strong);
+  border-radius: 0.3em;
+  background: var(--mpp-ui-editor-background);
+  content: '';
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  .label.unchecked:hover::before {
+  border-color: var(--mpp-ui-accent);
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  .label.checked::before {
+  border-color: var(--mpp-ui-accent);
+  background: var(--mpp-ui-accent);
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  .label.checked::after {
+  position: absolute;
+  width: 0.28em;
+  height: 0.52em;
+  margin-top: -0.12em;
+  border: solid var(--mpp-ui-accent-text);
+  border-width: 0 0.13em 0.13em 0;
+  content: '';
+  transform: rotate(45deg);
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  .label.checked {
+  position: relative;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-list-item-block
+  .list-item:has(> .label-wrapper .checked)
+  > .children {
+  color: var(--mpp-ui-text-muted);
+}
+
+/* ── Tables ───────────────────────────────────────────────────────────────── */
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) .mpp-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.94em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) :is(th, td) {
+  padding: 0.6em 0.9em;
+  border: 0;
+  vertical-align: top;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) :is(th, td):not([align]) {
+  text-align: start;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) th {
+  background: var(--mpp-ui-table-header-background);
+  color: var(--mpp-ui-heading);
+  font-weight: 600;
+}
+
+[data-mpp-table-compact='true']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :is(th, td) {
+  padding: 0.28em 0.6em;
+}
+
+[data-mpp-table-compact='true']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  table {
+  font-size: 0.9em;
+  line-height: 1.4;
+}
+
+/* Variant: grid */
+[data-mpp-table='grid']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  table {
+  border-collapse: collapse;
+}
+
+[data-mpp-table='grid']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :is(th, td) {
+  border: 1px solid var(--mpp-ui-table-border);
+}
+
+/*
+ * Stripes: every second body row. Exported HTML has a thead, so its tbody starts
+ * with the first body row; in the editor, Crepe renders the header row as
+ * tr[data-is-header] inside the tbody, which shifts the parity by one.
+ */
+[data-mpp-table='grid'] .mpp-document:not(:has(> .milkdown)) tbody tr:nth-child(even) td,
+[data-mpp-table='grid'] .mpp-document .milkdown .ProseMirror tr:not([data-is-header]):nth-child(odd) td {
+  background: var(--mpp-ui-table-stripe);
+}
+
+/* Variant: striped */
+[data-mpp-table='striped']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  table {
+  /*
+   * A real border, not an inset shadow: an inset shadow is painted below the cells,
+   * so header and stripe backgrounds would cover the frame.
+   */
+  overflow: hidden;
+  border: 1px solid var(--mpp-ui-table-border);
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 0.65em;
+}
+
+[data-mpp-table='striped']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  th {
+  border-bottom: 1px solid var(--mpp-ui-table-border);
+}
+
+/* Same parity split as the grid variant (header row inside the tbody in the editor). */
+[data-mpp-table='striped'] .mpp-document:not(:has(> .milkdown)) tbody tr:nth-child(even) td,
+[data-mpp-table='striped'] .mpp-document .milkdown .ProseMirror tr:not([data-is-header]):nth-child(odd) td {
+  background: var(--mpp-ui-table-stripe);
+}
+
+/* Variant: minimal (booktabs) */
+[data-mpp-table='minimal']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  table {
+  border-top: 1.5px solid var(--mpp-ui-border-strong);
+  border-bottom: 1.5px solid var(--mpp-ui-border-strong);
+}
+
+[data-mpp-table='minimal']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  th {
+  border-bottom: 1px solid var(--mpp-ui-border-strong);
+  background: transparent;
+}
+
+[data-mpp-table='minimal']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  tr
+  + tr
+  td {
+  border-top: 1px solid color-mix(in srgb, var(--mpp-ui-table-border) 60%, transparent);
+}
+
+/* Variant: bordered */
+[data-mpp-table='bordered']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  table {
+  border-collapse: collapse;
+  border: 1.5px solid var(--mpp-ui-border-strong);
+}
+
+[data-mpp-table='bordered']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :is(th, td) {
+  border: 1px solid var(--mpp-ui-border-strong);
+}
+
+[data-mpp-table='bordered']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  th {
+  border-bottom-width: 2px;
+}
+
+/* Variant: card */
+[data-mpp-table='card']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  table {
+  overflow: hidden;
+  border-radius: 0.9em;
+  background: color-mix(in srgb, var(--mpp-ui-editor-text) 3%, var(--mpp-ui-editor-background));
+  box-shadow:
+    0 0 0 1px var(--mpp-ui-table-border),
+    var(--mpp-ui-shadow-md);
+}
+
+[data-mpp-table='card'] :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) th {
+  background: color-mix(in srgb, var(--mpp-ui-accent) 12%, var(--mpp-ui-editor-background));
+  color: var(--mpp-ui-heading);
+}
+
+[data-mpp-table='card']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  tr
+  + tr
+  td,
+[data-mpp-table='card']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  tbody
+  tr:first-child
+  td {
+  border-top: 1px solid var(--mpp-ui-table-border);
+}
+
+/*
+ * While editing, the variants without vertical rules get a faint separator between
+ * adjacent cells, so the columns of a new or empty table are visible. Only the
+ * editable surface is affected; exported HTML keeps the variant's exact look.
+ */
+:is([data-mpp-table='striped'], [data-mpp-table='minimal'], [data-mpp-table='card'])
+  .mpp-document
+  .milkdown
+  .ProseMirror
+  :is(th, td)
+  + :is(th, td) {
+  border-inline-start: 1px solid color-mix(in srgb, var(--mpp-ui-table-border) 60%, transparent);
+}
+
+/* Crepe table block: keep the drag handles above the rounded table. */
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-table-block
+  .table-wrapper {
+  padding: 2px;
+}
+
+/* ── Horizontal rules ─────────────────────────────────────────────────────── */
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) hr {
+  position: relative;
+  height: 0;
+  margin-block: calc(var(--mpp-el-paragraph-spacing) * 2.2);
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-top: 1px solid var(--mpp-ui-border-strong);
+  background: none;
+  color: var(--mpp-ui-text-faint);
+}
+
+[data-mpp-hr='dashed'] :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) hr {
+  border-top-style: dashed;
+}
+
+[data-mpp-hr='dotted'] :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) hr {
+  border-top: 3px dotted var(--mpp-ui-border-strong);
+}
+
+[data-mpp-hr='fade'] :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) hr {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--mpp-ui-border-strong) 18%,
+    var(--mpp-ui-border-strong) 82%,
+    transparent
+  );
+}
+
+[data-mpp-hr='ornament'] :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) hr {
+  height: 1.6em;
+  border: 0;
+  background: linear-gradient(
+      90deg,
+      transparent 8%,
+      var(--mpp-ui-border-strong) 36%,
+      transparent 45%,
+      transparent 55%,
+      var(--mpp-ui-border-strong) 64%,
+      transparent 92%
+    )
+    center / 100% 1px no-repeat;
+}
+
+[data-mpp-hr='ornament']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  hr::after {
+  position: absolute;
+  inset: 0;
+  color: var(--mpp-ui-text-muted);
+  content: '\2766';
+  font-family: var(--mpp-el-heading-font);
+  font-size: 1.15em;
+  line-height: 1.4;
+  text-align: center;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) hr.ProseMirror-selectednode {
+  outline: 2px solid var(--mpp-ui-focus-ring);
+  outline-offset: 6px;
+  border-radius: 2px;
+}
+
+/* ── Images ───────────────────────────────────────────────────────────────── */
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--mpp-el-image-radius);
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :is(p > img:only-child, figure > img, .milkdown-image-block img) {
+  display: block;
+}
+
+[data-mpp-image-centered='true']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :is(p > img:only-child, figure > img) {
+  margin-inline: auto;
+}
+
+[data-mpp-image-centered='false']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-image-block
+  > .image-wrapper {
+  margin: 0;
+}
+
+[data-mpp-image-shadow='true']
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :is(p > img:only-child, figure > img, .milkdown-image-block img) {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--mpp-ui-border) 70%, transparent),
+    0 2px 6px rgb(0 0 0 / 0.1),
+    0 18px 40px -16px rgb(0 0 0 / 0.4);
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-image-block
+  .image-wrapper
+  img {
+  min-height: 0;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  .milkdown-image-block
+  .caption-input,
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  figcaption:not(.mpp-code-lang) {
+  margin-top: 0.6em;
+  color: var(--mpp-ui-text-muted);
+  font-size: 0.875em;
+  text-align: center;
+}
+
+/* ── Footnotes, details, math ─────────────────────────────────────────────── */
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) .footnotes {
+  margin-top: calc(var(--mpp-el-paragraph-spacing) * 3);
+  padding-top: 1em;
+  border-top: 1px solid var(--mpp-ui-border);
+  color: var(--mpp-ui-text-muted);
+  font-size: 0.875em;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) .footnotes ol {
+  padding-left: 1.4em;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+  :is(.sr-only, #footnote-label) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) sup > a[data-footnote-ref],
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) a[data-footnote-backref] {
+  padding: 0 0.15em;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) details {
+  padding: 0.6em 1em;
+  border: 1px solid var(--mpp-ui-border);
+  border-radius: 0.6em;
+  background: color-mix(in srgb, var(--mpp-ui-editor-text) 2.5%, transparent);
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) .katex {
+  font-size: 1.08em;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) .katex-display {
+  margin-block: 0.4em;
+  padding-block: 0.3em;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+:is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) .katex-error {
+  color: var(--mpp-ui-danger);
+}
+
+/* ── Print ────────────────────────────────────────────────────────────────── */
+
+@media print {
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+    :is(h1, h2, h3, h4, h5, h6) {
+    break-after: avoid;
+  }
+
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+    :is(pre, .mpp-code-block, .milkdown-code-block, blockquote, img, tr, figure) {
+    break-inside: avoid;
+  }
+
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) :is(p, li) {
+    orphans: 3;
+    widows: 3;
+  }
+
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+    :is(.mpp-code-block, .mpp-code-block pre),
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) > pre {
+    overflow: visible;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) .mpp-table-wrap {
+    overflow: visible;
+  }
+
+  [data-mpp-codeblock]
+    :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror)
+    .mpp-code-block,
+  [data-mpp-codeblock] :is(.mpp-document:not(:has(> .milkdown)), .mpp-document .milkdown .ProseMirror) > pre {
+    box-shadow: inset 0 0 0 1px var(--mpp-code-border);
+  }
+}

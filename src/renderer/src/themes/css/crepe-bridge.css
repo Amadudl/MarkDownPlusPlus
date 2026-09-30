@@ -1,0 +1,685 @@
+/*
+ * Crepe bridge: maps every Crepe CSS variable to MarkDown++ theme tokens and restyles
+ * Crepe's editing chrome (toolbar, slash menu, block handle, link tooltip, table
+ * controls, code block header and language picker, image block, inline LaTeX editor)
+ * so it looks native to the active theme. Document content itself is styled by
+ * `elements.css`.
+ *
+ * Every selector is prefixed with `.mpp-document`, which makes it one class more
+ * specific than the corresponding rule of Crepe's `common/style.css`.
+ */
+
+.mpp-document .milkdown,
+.mpp-document.milkdown {
+  --crepe-color-background: var(--mpp-ui-editor-background);
+  --crepe-color-on-background: var(--mpp-ui-editor-text);
+  --crepe-color-surface: var(--mpp-ui-surface-elevated);
+  --crepe-color-surface-low: var(--mpp-ui-surface-sunken);
+  --crepe-color-on-surface: var(--mpp-ui-text);
+  --crepe-color-on-surface-variant: var(--mpp-ui-text-muted);
+  --crepe-color-outline: var(--mpp-ui-text-faint);
+  --crepe-color-primary: var(--mpp-ui-accent);
+  --crepe-color-secondary: var(--mpp-ui-surface-sunken);
+  --crepe-color-on-secondary: var(--mpp-ui-text);
+  --crepe-color-inverse: var(--mpp-ui-text);
+  --crepe-color-on-inverse: var(--mpp-ui-background);
+  --crepe-color-inline-code: var(--mpp-ui-inline-code-text);
+  --crepe-color-error: var(--mpp-ui-danger);
+  --crepe-color-hover: color-mix(in srgb, var(--mpp-ui-text) 7%, transparent);
+  --crepe-color-selected: var(--mpp-ui-selection);
+  --crepe-color-inline-area: var(--mpp-ui-inline-code-background);
+  --crepe-color-diff-added: var(--mpp-ui-success);
+  --crepe-color-diff-removed: var(--mpp-ui-danger);
+  --crepe-base-font-size: var(--mpp-el-base-font-size);
+  --crepe-font-title: var(--mpp-el-heading-font);
+  --crepe-font-default: var(--mpp-el-body-font);
+  --crepe-font-code: var(--mpp-el-mono-font);
+  --crepe-shadow-1: var(--mpp-ui-shadow-md);
+  --crepe-shadow-2: var(--mpp-ui-shadow-lg);
+  --prosemirror-virtual-cursor-color: var(--mpp-ui-accent);
+
+  /* Horizontal room for the block handle next to the content column. */
+  --mpp-doc-gutter: clamp(48px, 7vw, 96px);
+
+  min-height: 100%;
+  background: var(--mpp-ui-editor-background);
+  color: var(--mpp-ui-editor-text);
+  font-family: var(--mpp-el-body-font);
+  font-size: var(--mpp-el-base-font-size);
+}
+
+/* ── Editable surface ─────────────────────────────────────────────────────── */
+
+.mpp-document .milkdown .ProseMirror {
+  box-sizing: border-box;
+  max-width: calc(var(--mpp-el-content-width) + 2 * var(--mpp-doc-gutter));
+  min-height: 100%;
+  margin-inline: auto;
+  padding: 56px var(--mpp-doc-gutter) 40vh;
+  outline: none;
+  caret-color: var(--mpp-ui-accent);
+}
+
+.mpp-document .milkdown .crepe-placeholder::before {
+  color: var(--mpp-ui-text-faint);
+}
+
+.mpp-document .milkdown .ProseMirror-gapcursor::after {
+  border-top: 2px solid var(--mpp-ui-accent);
+}
+
+.mpp-document .milkdown .crepe-drop-cursor {
+  background-color: var(--mpp-ui-accent);
+  opacity: 0.7;
+}
+
+.mpp-document .milkdown .ProseMirror .ProseMirror-selectednode {
+  background: color-mix(in srgb, var(--mpp-ui-selection) 60%, transparent);
+}
+
+.mpp-document .milkdown .ProseMirror img.ProseMirror-selectednode {
+  outline: 2px solid var(--mpp-ui-focus-ring);
+  outline-offset: 2px;
+}
+
+/* ── Shared chrome typography ─────────────────────────────────────────────── */
+
+.mpp-document
+  .milkdown
+  :is(
+    .milkdown-toolbar,
+    .milkdown-slash-menu,
+    .milkdown-link-preview,
+    .milkdown-link-edit,
+    .milkdown-latex-inline-edit,
+    .milkdown-code-block .tools,
+    .milkdown-code-block .list-wrapper,
+    .milkdown-table-block .handle
+  ) {
+  font-family: var(--mpp-font-ui);
+  font-size: 13px;
+  line-height: 1.4;
+  letter-spacing: normal;
+}
+
+/* ── Selection toolbar ────────────────────────────────────────────────────── */
+
+.mpp-document .milkdown .milkdown-toolbar {
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--mpp-ui-border);
+  border-radius: 10px;
+  background: var(--mpp-ui-surface-elevated);
+  box-shadow: var(--mpp-ui-shadow-lg);
+}
+
+.mpp-document .milkdown .milkdown-toolbar .toolbar-item {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  margin: 0;
+  padding: 0;
+  place-items: center;
+  border-radius: 7px;
+  transition: background-color 120ms ease;
+}
+
+.mpp-document .milkdown .milkdown-toolbar .toolbar-item svg {
+  width: 18px;
+  height: 18px;
+  color: var(--mpp-ui-text-muted);
+  fill: var(--mpp-ui-text-muted);
+}
+
+.mpp-document .milkdown .milkdown-toolbar .toolbar-item:hover {
+  background: color-mix(in srgb, var(--mpp-ui-text) 8%, transparent);
+}
+
+.mpp-document .milkdown .milkdown-toolbar .toolbar-item:hover svg {
+  color: var(--mpp-ui-text);
+  fill: var(--mpp-ui-text);
+}
+
+.mpp-document .milkdown .milkdown-toolbar .toolbar-item.active {
+  background: color-mix(in srgb, var(--mpp-ui-accent) 16%, transparent);
+}
+
+.mpp-document .milkdown .milkdown-toolbar .toolbar-item.active svg {
+  color: var(--mpp-ui-accent);
+  fill: var(--mpp-ui-accent);
+}
+
+.mpp-document .milkdown .milkdown-toolbar .divider {
+  width: 1px;
+  height: 18px;
+  margin: 6px 3px;
+  background: var(--mpp-ui-border);
+}
+
+/* ── Slash menu ───────────────────────────────────────────────────────────── */
+
+.mpp-document .milkdown .milkdown-slash-menu {
+  overflow: hidden;
+  border: 1px solid var(--mpp-ui-border);
+  border-radius: 12px;
+  background: var(--mpp-ui-surface-elevated);
+  box-shadow: var(--mpp-ui-shadow-lg);
+  color: var(--mpp-ui-text);
+}
+
+.mpp-document .milkdown .milkdown-slash-menu .tab-group {
+  padding: 8px 8px 0;
+  border-bottom: 1px solid var(--mpp-ui-border);
+}
+
+.mpp-document .milkdown .milkdown-slash-menu .tab-group ul {
+  gap: 4px;
+  padding: 0 0 8px;
+}
+
+.mpp-document .milkdown .milkdown-slash-menu .tab-group ul li {
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: var(--mpp-ui-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.mpp-document .milkdown .milkdown-slash-menu .tab-group ul li:hover {
+  background: color-mix(in srgb, var(--mpp-ui-text) 8%, transparent);
+  color: var(--mpp-ui-text);
+}
+
+.mpp-document .milkdown .milkdown-slash-menu .tab-group ul li.selected {
+  background: color-mix(in srgb, var(--mpp-ui-accent) 16%, transparent);
+  color: var(--mpp-ui-accent);
+}
+
+.mpp-document .milkdown .milkdown-slash-menu .menu-groups {
+  max-height: 380px;
+  padding: 4px 6px 6px;
+}
+
+.mpp-document .milkdown .milkdown-slash-menu .menu-groups .menu-group h6 {
+  padding: 10px 10px 4px;
+  color: var(--mpp-ui-text-faint);
+  font-family: var(--mpp-font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 16px;
+}
+
+.mpp-document .milkdown .milkdown-slash-menu .menu-groups .menu-group li {
+  min-width: 232px;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  color: var(--mpp-ui-text);
+}
+
+.mpp-document .milkdown .milkdown-slash-menu .menu-groups .menu-group li svg {
+  width: 18px;
+  height: 18px;
+  color: var(--mpp-ui-text-muted);
+  fill: var(--mpp-ui-text-muted);
+}
+
+.mpp-document .milkdown .milkdown-slash-menu .menu-groups .menu-group li > span {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.mpp-document .milkdown .milkdown-slash-menu .menu-groups .menu-group li:is(.hover, .active) {
+  background: color-mix(in srgb, var(--mpp-ui-accent) 14%, transparent);
+}
+
+.mpp-document .milkdown .milkdown-slash-menu .menu-groups .menu-group li:is(.hover, .active) svg {
+  color: var(--mpp-ui-accent);
+  fill: var(--mpp-ui-accent);
+}
+
+.mpp-document .milkdown .milkdown-slash-menu .menu-groups .menu-group + .menu-group::before {
+  margin: 4px 8px;
+  background: var(--mpp-ui-border);
+}
+
+/* ── Block handle ─────────────────────────────────────────────────────────── */
+
+.mpp-document .milkdown .milkdown-block-handle {
+  gap: 1px;
+  transition: opacity 150ms ease;
+}
+
+.mpp-document .milkdown .milkdown-block-handle .operation-item {
+  display: grid;
+  width: 24px;
+  height: 26px;
+  padding: 0;
+  place-items: center;
+  border-radius: 6px;
+}
+
+.mpp-document .milkdown .milkdown-block-handle .operation-item svg {
+  width: 18px;
+  height: 18px;
+  fill: var(--mpp-ui-text-faint);
+}
+
+.mpp-document .milkdown .milkdown-block-handle .operation-item:hover {
+  background: color-mix(in srgb, var(--mpp-ui-text) 8%, transparent);
+}
+
+.mpp-document .milkdown .milkdown-block-handle .operation-item:hover svg {
+  fill: var(--mpp-ui-text-muted);
+}
+
+.mpp-document .milkdown .milkdown-block-handle .operation-item.active {
+  background: color-mix(in srgb, var(--mpp-ui-accent) 16%, transparent);
+}
+
+/* ── Link tooltip ─────────────────────────────────────────────────────────── */
+
+.mpp-document .milkdown .milkdown-link-preview > .link-preview,
+.mpp-document .milkdown .milkdown-link-edit > .link-edit {
+  height: 36px;
+  align-items: center;
+  padding: 4px 6px 4px 12px;
+  border: 1px solid var(--mpp-ui-border);
+  border-radius: 10px;
+  background: var(--mpp-ui-surface-elevated);
+  box-shadow: var(--mpp-ui-shadow-lg);
+}
+
+.mpp-document .milkdown .milkdown-link-preview > .link-preview > .link-display {
+  color: var(--mpp-ui-link);
+  font-size: 13px;
+}
+
+.mpp-document .milkdown .milkdown-link-edit > .link-edit > .input-area {
+  color: var(--mpp-ui-text);
+  font-family: var(--mpp-font-ui);
+  font-size: 13px;
+}
+
+.mpp-document .milkdown .milkdown-link-edit > .link-edit > .input-area::placeholder {
+  color: var(--mpp-ui-text-faint);
+}
+
+.mpp-document
+  .milkdown
+  :is(.milkdown-link-preview > .link-preview, .milkdown-link-edit > .link-edit)
+  :is(.button, .link-icon) {
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+}
+
+.mpp-document
+  .milkdown
+  :is(.milkdown-link-preview > .link-preview, .milkdown-link-edit > .link-edit)
+  :is(.button, .link-icon)
+  > svg {
+  width: 16px;
+  height: 16px;
+  color: var(--mpp-ui-text-muted);
+  fill: var(--mpp-ui-text-muted);
+}
+
+.mpp-document
+  .milkdown
+  :is(.milkdown-link-preview > .link-preview, .milkdown-link-edit > .link-edit)
+  :is(.button, .link-icon):hover {
+  background: color-mix(in srgb, var(--mpp-ui-text) 8%, transparent);
+}
+
+/* ── Code block header, copy button and language picker ───────────────────── */
+
+.mpp-document .milkdown .milkdown-code-block .tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px 0 12px;
+}
+
+.mpp-document .milkdown .milkdown-code-block .tools .language-button {
+  gap: 4px;
+  margin: 0;
+  padding: 3px 6px 3px 8px;
+  border-radius: 6px;
+  background: transparent;
+  color: color-mix(in srgb, var(--mpp-code-foreground) 60%, var(--mpp-code-background));
+  font-family: var(--mpp-el-mono-font);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  line-height: 16px;
+  text-transform: uppercase;
+}
+
+.mpp-document .milkdown .milkdown-code-block .tools .language-button:hover,
+.mpp-document .milkdown .milkdown-code-block .tools .language-button[data-expanded='true'] {
+  background: color-mix(in srgb, var(--mpp-code-foreground) 10%, transparent);
+  color: var(--mpp-code-foreground);
+}
+
+.mpp-document .milkdown .milkdown-code-block .tools .language-button .expand-icon svg {
+  color: currentColor;
+  fill: currentColor;
+}
+
+[data-mpp-code-show-language='true'] .mpp-document .milkdown .milkdown-code-block .tools .language-button {
+  opacity: 1;
+}
+
+.mpp-document .milkdown .milkdown-code-block .tools .tools-button-group button {
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--mpp-code-foreground) 9%, transparent);
+  color: color-mix(in srgb, var(--mpp-code-foreground) 75%, var(--mpp-code-background));
+  font-family: var(--mpp-font-ui);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.mpp-document .milkdown .milkdown-code-block .tools .tools-button-group button:is(:first-child, :last-child) {
+  border-radius: 6px;
+}
+
+.mpp-document .milkdown .milkdown-code-block .tools .tools-button-group button:hover {
+  background: color-mix(in srgb, var(--mpp-code-foreground) 16%, transparent);
+  color: var(--mpp-code-foreground);
+}
+
+.mpp-document .milkdown .milkdown-code-block .tools .tools-button-group button svg {
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
+}
+
+.mpp-document .milkdown .milkdown-code-block .language-picker {
+  padding-top: 6px;
+}
+
+.mpp-document .milkdown .milkdown-code-block .list-wrapper {
+  width: 248px;
+  overflow: hidden;
+  padding-top: 8px;
+  border: 1px solid var(--mpp-ui-border);
+  border-radius: 12px;
+  background: var(--mpp-ui-surface-elevated);
+  box-shadow: var(--mpp-ui-shadow-lg);
+  color: var(--mpp-ui-text);
+}
+
+.mpp-document .milkdown .milkdown-code-block .search-box {
+  margin: 0 8px 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  outline: 1px solid var(--mpp-ui-border);
+  background: var(--mpp-ui-surface-sunken);
+}
+
+.mpp-document .milkdown .milkdown-code-block .search-box:has(input:focus) {
+  outline: 2px solid var(--mpp-ui-focus-ring);
+}
+
+.mpp-document .milkdown .milkdown-code-block .search-box .search-input,
+.mpp-document .milkdown .milkdown-code-block .search-box input {
+  color: var(--mpp-ui-text);
+  font-family: var(--mpp-font-ui);
+  font-size: 13px;
+}
+
+.mpp-document .milkdown .milkdown-code-block .search-box .clear-icon svg {
+  color: var(--mpp-ui-text-muted);
+  fill: var(--mpp-ui-text-muted);
+}
+
+.mpp-document .milkdown .milkdown-code-block .language-list {
+  height: 320px;
+  padding: 0 6px 6px;
+}
+
+.mpp-document .milkdown .milkdown-code-block .language-list-item {
+  padding: 5px 10px;
+  border-radius: 6px;
+  color: var(--mpp-ui-text);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.mpp-document .milkdown .milkdown-code-block .language-list-item:is(:hover, :focus-visible) {
+  background: color-mix(in srgb, var(--mpp-ui-accent) 14%, transparent);
+}
+
+.mpp-document .milkdown .milkdown-code-block .language-list-item .leading svg {
+  width: 16px;
+  height: 16px;
+  fill: var(--mpp-ui-accent);
+}
+
+.mpp-document .milkdown .milkdown-code-block .preview-panel {
+  padding: 0 1.15em 1em;
+  font-family: var(--mpp-el-body-font);
+}
+
+.mpp-document .milkdown .milkdown-code-block .preview-panel .preview-divider {
+  background: var(--mpp-code-border);
+  opacity: 1;
+}
+
+.mpp-document .milkdown .milkdown-code-block .preview-panel .preview-label {
+  color: color-mix(in srgb, var(--mpp-code-foreground) 55%, var(--mpp-code-background));
+  font-family: var(--mpp-font-ui);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.mpp-document .milkdown .milkdown-code-block .preview-panel .preview {
+  color: var(--mpp-code-foreground);
+}
+
+.mpp-document .milkdown .milkdown-code-block .cm-panel {
+  background: var(--mpp-ui-surface);
+  color: var(--mpp-ui-text);
+  font-family: var(--mpp-font-ui);
+}
+
+.mpp-document .milkdown .milkdown-code-block .cm-panel input {
+  background: var(--mpp-ui-surface-sunken);
+  color: var(--mpp-ui-text);
+}
+
+.mpp-document .milkdown .milkdown-code-block .cm-panel > button {
+  border-color: var(--mpp-ui-border);
+  background: var(--mpp-ui-surface-sunken);
+  color: var(--mpp-ui-text);
+}
+
+/* ── Table controls ───────────────────────────────────────────────────────── */
+
+.mpp-document .milkdown .milkdown-table-block .cell-handle {
+  border: 1px solid var(--mpp-ui-border);
+  background-color: var(--mpp-ui-surface-elevated);
+  box-shadow: var(--mpp-ui-shadow-sm);
+  color: var(--mpp-ui-text-muted);
+}
+
+.mpp-document .milkdown .milkdown-table-block .cell-handle:hover {
+  background-color: var(--mpp-ui-surface-sunken);
+}
+
+.mpp-document .milkdown .milkdown-table-block .cell-handle .button-group {
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--mpp-ui-border);
+  border-radius: 10px;
+  background-color: var(--mpp-ui-surface-elevated);
+  box-shadow: var(--mpp-ui-shadow-lg);
+}
+
+.mpp-document .milkdown .milkdown-table-block .cell-handle .button-group button {
+  margin: 0;
+  padding: 5px;
+  border-radius: 6px;
+}
+
+.mpp-document .milkdown .milkdown-table-block .cell-handle .button-group button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.mpp-document .milkdown .milkdown-table-block .cell-handle .button-group button:hover {
+  border-radius: 6px;
+  background-color: color-mix(in srgb, var(--mpp-ui-text) 8%, transparent);
+}
+
+.mpp-document .milkdown .milkdown-table-block svg {
+  fill: var(--mpp-ui-text-muted);
+}
+
+.mpp-document .milkdown .milkdown-table-block .line-handle {
+  background-color: var(--mpp-ui-accent);
+}
+
+.mpp-document .milkdown .milkdown-table-block .line-handle .add-button {
+  border: 1px solid var(--mpp-ui-border);
+  background-color: var(--mpp-ui-surface-elevated);
+  box-shadow: var(--mpp-ui-shadow-sm);
+}
+
+.mpp-document .milkdown .milkdown-table-block .selectedCell::after {
+  background-color: var(--mpp-ui-selection);
+  opacity: 1;
+}
+
+.mpp-document .milkdown .milkdown-table-block :is(th, td):has(.ProseMirror-selectednode) {
+  outline: 2px solid var(--mpp-ui-focus-ring);
+  outline-offset: -2px;
+}
+
+.mpp-document .milkdown .milkdown-table-block .drag-preview {
+  outline: 2px solid var(--mpp-ui-accent);
+  background-color: var(--mpp-ui-surface-elevated);
+}
+
+/* ── Image block ──────────────────────────────────────────────────────────── */
+
+.mpp-document .milkdown .milkdown-image-block .image-edit,
+.mpp-document .milkdown .milkdown-image-inline .empty-image-inline {
+  border: 1px dashed var(--mpp-ui-border-strong);
+  border-radius: 10px;
+  background: var(--mpp-ui-surface-sunken);
+  font-family: var(--mpp-font-ui);
+  font-size: 13px;
+}
+
+.mpp-document .milkdown .milkdown-image-block .image-edit .image-icon svg,
+.mpp-document .milkdown .milkdown-image-inline .empty-image-inline .image-icon svg {
+  fill: var(--mpp-ui-text-faint);
+}
+
+.mpp-document .milkdown .milkdown-image-block .image-edit .link-importer .placeholder,
+.mpp-document .milkdown .milkdown-image-inline .empty-image-inline .link-importer .placeholder {
+  color: var(--mpp-ui-text-faint);
+}
+
+.mpp-document .milkdown .milkdown-image-block .image-edit .link-importer .placeholder .uploader,
+.mpp-document .milkdown .milkdown-image-inline .empty-image-inline .link-importer .placeholder .uploader {
+  color: var(--mpp-ui-accent);
+}
+
+.mpp-document .milkdown .milkdown-image-block .image-edit .confirm {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 8px;
+  background: var(--mpp-ui-accent);
+  color: var(--mpp-ui-accent-text);
+  font-size: 12px;
+  line-height: 30px;
+}
+
+.mpp-document .milkdown .milkdown-image-block .image-edit .confirm:hover {
+  background: var(--mpp-ui-accent-hover);
+}
+
+.mpp-document .milkdown .milkdown-image-block .image-wrapper .operation > .operation-item {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  place-items: center;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--mpp-ui-surface-elevated) 88%, transparent);
+  box-shadow: var(--mpp-ui-shadow-md);
+  color: var(--mpp-ui-text);
+  opacity: 1;
+  backdrop-filter: blur(8px);
+}
+
+.mpp-document .milkdown .milkdown-image-block .image-wrapper .operation > .operation-item svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.mpp-document .milkdown .milkdown-image-block .image-wrapper .image-resize-handle {
+  background: var(--mpp-ui-accent);
+}
+
+.mpp-document .milkdown .milkdown-image-block .caption-input {
+  font-family: var(--mpp-el-body-font);
+}
+
+.mpp-document .milkdown .milkdown-image-block.selected > .image-wrapper::before {
+  border-radius: var(--mpp-el-image-radius);
+  box-shadow: 0 0 0 2px var(--mpp-ui-focus-ring);
+}
+
+/* ── Math ─────────────────────────────────────────────────────────────────── */
+
+.mpp-document .milkdown span[data-type='math_inline'] {
+  padding: 0 2px;
+  color: inherit;
+}
+
+.mpp-document .milkdown .milkdown-latex-inline-edit {
+  padding: 4px 6px 4px 12px;
+  border: 1px solid var(--mpp-ui-border);
+  border-radius: 10px;
+  background: var(--mpp-ui-surface-elevated);
+  box-shadow: var(--mpp-ui-shadow-lg);
+}
+
+.mpp-document .milkdown .milkdown-latex-inline-edit .ProseMirror {
+  color: var(--mpp-ui-text);
+  font-family: var(--mpp-el-mono-font);
+  font-size: 13px;
+}
+
+.mpp-document .milkdown .milkdown-latex-inline-edit .container button:hover {
+  background: color-mix(in srgb, var(--mpp-ui-text) 8%, transparent);
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .mpp-document .milkdown * {
+    transition: none !important;
+  }
+}
+
+@media print {
+  .mpp-document .milkdown :is(.milkdown-toolbar, .milkdown-slash-menu, .milkdown-block-handle, .handle) {
+    display: none !important;
+  }
+
+  .mpp-document .milkdown .ProseMirror {
+    padding: 0;
+  }
+}

@@ -1,0 +1,7 @@
+/* Application shell styles. Colours come exclusively from the theme engine's --mpp-ui-* variables. */
+@import './base.css';
+@import './layout.css';
+@import './editor.css';
+@import './overlays.css';
+@import './settings.css';
+@import './welcome.css';

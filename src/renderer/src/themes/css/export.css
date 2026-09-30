@@ -1,0 +1,48 @@
+/*
+ * Page styles for standalone exported HTML / PDF documents
+ * (an `article.mpp-document.mpp-export` element directly inside `body`).
+ */
+
+html {
+  background: var(--mpp-ui-editor-background);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--mpp-ui-editor-background);
+  color: var(--mpp-ui-editor-text);
+}
+
+.mpp-export {
+  box-sizing: border-box;
+  max-width: calc(var(--mpp-el-content-width) + 112px);
+  margin: 0 auto;
+  padding: 64px 56px 96px;
+}
+
+@media (max-width: 640px) {
+  .mpp-export {
+    padding: 32px 20px 64px;
+  }
+}
+
+@page {
+  margin: 0;
+}
+
+@media print {
+  html,
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .mpp-export {
+    max-width: none;
+    padding: 16mm 18mm;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+}

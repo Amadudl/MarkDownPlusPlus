@@ -1,0 +1,11 @@
+out
+dist
+release
+coverage
+playwright-report
+test-results
+node_modules
+package-lock.json
+*.png
+*.icns
+*.ico

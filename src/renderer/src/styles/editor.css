@@ -1,0 +1,222 @@
+/* ------------------------------------------------------------ editor area */
+.editor-area {
+  position: absolute;
+  inset: 0;
+}
+
+.editor-panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--mpp-ui-editor-background);
+  color: var(--mpp-ui-editor-text);
+}
+
+.editor-panel[hidden] {
+  display: none;
+}
+
+.editor-surface {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  scroll-behavior: smooth;
+  user-select: text;
+}
+
+.is-focus-mode .editor-surface {
+  padding-top: var(--mpp-space-5);
+}
+
+/*
+ * Visual mode: the theme's Crepe bridge centres the reading column
+ * (width from --mpp-el-content-width); the host only has to fill the panel.
+ */
+.editor-surface .mpp-editor-host,
+.editor-surface .mpp-editor-mount {
+  min-height: 100%;
+}
+
+/* Source mode: CodeMirror fills the panel and scrolls itself. */
+.editor-panel[data-mode='source'] .editor-surface {
+  overflow: hidden;
+}
+
+.editor-panel[data-mode='source'] .mpp-editor-host,
+.editor-panel[data-mode='source'] .mpp-editor-mount,
+.editor-panel[data-mode='source'] .cm-editor {
+  height: 100%;
+}
+
+.editor-panel[data-mode='source'] .cm-editor .cm-content,
+.editor-panel[data-mode='source'] .cm-editor .cm-gutters {
+  font-family: var(--mpp-source-font-family, var(--mpp-font-mono));
+  font-size: var(--mpp-source-font-size, 14px);
+}
+
+/*
+ * Markdown mode with word wrap: lines use the readable column width of Visual mode
+ * (--mpp-el-content-width plus the 16px line padding on each side), centred together
+ * with the line-number gutter, so switching modes does not move the text sideways.
+ * Without word wrap the content keeps the full width and scrolls horizontally.
+ */
+.editor-panel[data-mode='source'] .cm-scroller:has(> .cm-content.cm-lineWrapping) {
+  justify-content: center;
+}
+
+.editor-panel[data-mode='source'] .cm-content.cm-lineWrapping {
+  max-width: calc(var(--mpp-el-content-width) + 32px);
+}
+
+/*
+ * Find & replace matches, shared by both editors (decorations from
+ * editor/wysiwyg/search.ts and editor/source/search.ts).
+ */
+.mpp-search-match {
+  border-radius: 2px;
+  background: var(--mpp-ui-mark);
+}
+
+.mpp-search-current {
+  background: color-mix(in srgb, var(--mpp-ui-warning) 55%, transparent);
+  box-shadow: 0 0 0 1px var(--mpp-ui-warning);
+}
+
+/* ---------------------------------------------------- external change bar */
+.change-banner {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--mpp-space-3);
+  padding: var(--mpp-space-2) var(--mpp-space-4);
+  border-bottom: 1px solid color-mix(in srgb, var(--mpp-ui-warning) 40%, transparent);
+  background: color-mix(in srgb, var(--mpp-ui-warning) 12%, var(--mpp-ui-surface));
+  color: var(--mpp-ui-text);
+  animation: mpp-slide-down var(--mpp-duration-slow) var(--mpp-ease);
+}
+
+.change-banner > svg {
+  flex: none;
+  color: var(--mpp-ui-warning);
+}
+
+.change-banner[data-kind='deleted'] {
+  border-bottom-color: color-mix(in srgb, var(--mpp-ui-danger) 40%, transparent);
+  background: color-mix(in srgb, var(--mpp-ui-danger) 10%, var(--mpp-ui-surface));
+}
+
+.change-banner[data-kind='deleted'] > svg {
+  color: var(--mpp-ui-danger);
+}
+
+.change-banner-text {
+  flex: 1;
+  font-size: var(--mpp-text-md);
+}
+
+.change-banner-actions {
+  display: flex;
+  gap: var(--mpp-space-2);
+}
+
+@keyframes mpp-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+/* ---------------------------------------------------------------- find bar */
+.findbar {
+  position: absolute;
+  z-index: 30;
+  top: var(--mpp-space-2);
+  right: var(--mpp-space-5);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mpp-space-1);
+  padding: 6px;
+  border: 1px solid var(--mpp-ui-border);
+  border-radius: var(--mpp-radius-lg);
+  background: var(--mpp-ui-surface-elevated);
+  box-shadow: var(--mpp-shadow-lg);
+  animation: mpp-slide-down var(--mpp-duration) var(--mpp-ease);
+}
+
+.findbar-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.findbar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--mpp-space-1);
+}
+
+.findbar-field {
+  display: flex;
+  align-items: center;
+  width: 300px;
+  height: 28px;
+  padding-right: 2px;
+  border: 1px solid var(--mpp-ui-border);
+  border-radius: var(--mpp-radius-sm);
+  background: var(--mpp-ui-surface-sunken);
+  transition:
+    border-color var(--mpp-duration) var(--mpp-ease),
+    box-shadow var(--mpp-duration) var(--mpp-ease);
+}
+
+.findbar-field:focus-within {
+  border-color: var(--mpp-ui-focus-ring);
+  box-shadow: 0 0 0 3px var(--mpp-accent-ring);
+}
+
+.findbar-field[data-error='true'] {
+  border-color: var(--mpp-ui-danger);
+}
+
+.findbar-field .icon-button {
+  width: 24px;
+  height: 22px;
+}
+
+.findbar-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--mpp-space-2);
+  border: 0;
+  background: transparent;
+  font-size: var(--mpp-text-md);
+}
+
+.findbar-input:focus-visible {
+  outline: none;
+}
+
+.findbar-count {
+  min-width: 72px;
+  padding: 0 var(--mpp-space-1);
+  color: var(--mpp-ui-text-muted);
+  font-size: var(--mpp-text-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.findbar-count[data-error='true'] {
+  color: var(--mpp-ui-danger);
+}
+
+.findbar-expand[aria-pressed='true'] svg {
+  transform: rotate(90deg);
+}
+
+.findbar-expand svg {
+  transition: transform var(--mpp-duration) var(--mpp-ease);
+}

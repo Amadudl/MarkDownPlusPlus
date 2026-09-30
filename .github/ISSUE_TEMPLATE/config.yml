@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/Amadudl/MarkDownPlusPlus/security/advisories/new
+    about: Please report vulnerabilities privately. See SECURITY.md for the process.
+  - name: Documentation
+    url: https://github.com/Amadudl/MarkDownPlusPlus/tree/main/docs
+    about: The user guide, tutorial, theming guide and keyboard shortcuts.
+  - name: Questions and support
+    url: https://github.com/Amadudl/MarkDownPlusPlus/blob/main/SUPPORT.md
+    about: Where to ask questions and how to get help.

@@ -1,0 +1,571 @@
+/* ------------------------------------------------------------------ shell */
+.app {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: var(--mpp-ui-background);
+}
+
+.app > .topbar,
+.app > .toolbar,
+.app > .statusbar {
+  flex: none;
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.app-main {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background: var(--mpp-ui-editor-background);
+}
+
+/* ---------------------------------------------------------------- top bar */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--mpp-space-2);
+  height: var(--mpp-topbar-height);
+  padding: 0 var(--mpp-space-2);
+  border-bottom: 1px solid var(--mpp-ui-border);
+  background: var(--mpp-ui-surface);
+}
+
+.platform-darwin .topbar {
+  padding-left: 78px;
+  -webkit-app-region: drag;
+}
+
+.platform-darwin
+  .topbar
+  :is(button, input, [role='tab'], [role='tablist'], [role='radiogroup'], [role='menu']) {
+  -webkit-app-region: no-drag;
+}
+
+.topbar-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--mpp-space-1);
+}
+
+/* -------------------------------------------------------------- tab strip */
+.tabstrip {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+  height: 100%;
+}
+
+.tabstrip-list {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.tabstrip-list::-webkit-scrollbar {
+  display: none;
+}
+
+/* Fade the edges that hide tabs, so an overflowing strip reads as scrollable. */
+.tabstrip-list[data-overflow-start='true'] {
+  mask-image: linear-gradient(to right, transparent, #000 var(--mpp-space-6));
+}
+
+.tabstrip-list[data-overflow-end='true'] {
+  mask-image: linear-gradient(to left, transparent, #000 var(--mpp-space-6));
+}
+
+.tabstrip-list[data-overflow-start='true'][data-overflow-end='true'] {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--mpp-space-6),
+    #000 calc(100% - var(--mpp-space-6)),
+    transparent
+  );
+}
+
+.tab-overflow {
+  position: relative;
+  flex: none;
+  margin-left: 2px;
+}
+
+.tab-overflow-menu {
+  position: absolute;
+  z-index: 200;
+  top: calc(100% + 4px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  min-width: 220px;
+  max-width: 360px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: var(--mpp-space-1);
+  border: 1px solid var(--mpp-ui-border);
+  border-radius: var(--mpp-radius-md);
+  background: var(--mpp-ui-surface-elevated);
+  box-shadow: var(--mpp-shadow-md);
+}
+
+.tab-overflow-item {
+  display: flex;
+  align-items: center;
+  gap: var(--mpp-space-2);
+  height: 30px;
+  padding: 0 var(--mpp-space-2);
+  border: 0;
+  border-radius: var(--mpp-radius-sm);
+  background: transparent;
+  color: var(--mpp-ui-text-muted);
+  text-align: left;
+}
+
+.tab-overflow-item:hover,
+.tab-overflow-item:focus-visible {
+  background: var(--mpp-hover);
+  color: var(--mpp-ui-text);
+}
+
+.tab-overflow-item.is-active {
+  color: var(--mpp-ui-text);
+  font-weight: 600;
+}
+
+.tab-overflow-item.is-active svg {
+  color: var(--mpp-ui-accent);
+}
+
+.tab-overflow-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-overflow-dirty {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mpp-ui-accent);
+}
+
+.tabstrip-filler {
+  flex: 1;
+  align-self: stretch;
+  min-width: var(--mpp-space-5);
+}
+
+.tabstrip-new {
+  margin-left: 2px;
+}
+
+.tab {
+  position: relative;
+  display: flex;
+  /* Tabs shrink (down to a readable minimum) before the strip starts to scroll. */
+  flex: 0 1 auto;
+  align-items: center;
+  min-width: 96px;
+  gap: 6px;
+  max-width: 220px;
+  height: 28px;
+  padding: 0 4px 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--mpp-radius-md);
+  color: var(--mpp-ui-text-muted);
+  cursor: default;
+  transition:
+    background-color var(--mpp-duration) var(--mpp-ease),
+    color var(--mpp-duration) var(--mpp-ease),
+    box-shadow var(--mpp-duration) var(--mpp-ease);
+}
+
+.tab:hover {
+  background: var(--mpp-hover);
+  color: var(--mpp-ui-text);
+}
+
+.tab.is-active {
+  border-color: var(--mpp-ui-border);
+  background: var(--mpp-ui-surface-elevated);
+  box-shadow: var(--mpp-shadow-sm);
+  color: var(--mpp-ui-text);
+}
+
+.tab:focus-visible {
+  outline-offset: -2px;
+}
+
+.tab.is-drop-target {
+  box-shadow: inset 2px 0 0 var(--mpp-ui-accent);
+}
+
+.tab-icon {
+  flex: none;
+  opacity: 0.7;
+}
+
+.tab.is-active .tab-icon {
+  color: var(--mpp-ui-accent);
+  opacity: 1;
+}
+
+.tab-title {
+  overflow: hidden;
+  font-size: var(--mpp-text-md);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-close {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--mpp-ui-text-faint);
+  opacity: 0;
+  transition:
+    opacity var(--mpp-duration) var(--mpp-ease),
+    background-color var(--mpp-duration) var(--mpp-ease);
+}
+
+.tab:hover .tab-close,
+.tab.is-active .tab-close,
+.tab.is-dirty .tab-close {
+  opacity: 1;
+}
+
+.tab-close:hover {
+  background: var(--mpp-pressed);
+  color: var(--mpp-ui-text);
+}
+
+.tab-dirty-dot {
+  position: absolute;
+  inset: 0;
+  display: none;
+  margin: auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mpp-ui-accent);
+}
+
+.tab.is-dirty .tab-dirty-dot {
+  display: block;
+}
+
+.tab.is-dirty .tab-close svg {
+  opacity: 0;
+}
+
+.tab.is-dirty .tab-close:hover .tab-dirty-dot {
+  display: none;
+}
+
+.tab.is-dirty .tab-close:hover svg {
+  opacity: 1;
+}
+
+/* ------------------------------------------------------------ mode switch */
+.mode-switch {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 30px;
+  margin: 0 var(--mpp-space-1);
+  padding: 2px;
+  border: 1px solid var(--mpp-ui-border);
+  border-radius: 999px;
+  background: var(--mpp-ui-surface-sunken);
+}
+
+.mode-switch-thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  border-radius: 999px;
+  background: var(--mpp-ui-accent);
+  box-shadow:
+    var(--mpp-shadow-sm),
+    0 0 0 1px color-mix(in srgb, var(--mpp-ui-accent) 60%, transparent);
+  transition: transform var(--mpp-duration-slow) var(--mpp-ease-spring);
+}
+
+.mode-switch[data-mode='source'] .mode-switch-thumb {
+  transform: translateX(100%);
+}
+
+.mode-switch[aria-disabled='true'] .mode-switch-thumb {
+  background: var(--mpp-ui-border-strong);
+  box-shadow: none;
+}
+
+.mode-switch-option {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 92px;
+  padding: 0 var(--mpp-space-3);
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--mpp-ui-text-muted);
+  font-size: var(--mpp-text-md);
+  font-weight: 600;
+  transition: color var(--mpp-duration) var(--mpp-ease);
+}
+
+.mode-switch-option:hover:not(:disabled) {
+  color: var(--mpp-ui-text);
+}
+
+.mode-switch-option.is-checked,
+.mode-switch-option.is-checked:hover:not(:disabled) {
+  color: var(--mpp-ui-accent-text);
+}
+
+.mode-switch-option:disabled {
+  opacity: 0.55;
+}
+
+.mode-switch-option:focus-visible {
+  outline-offset: 0;
+}
+
+/* ---------------------------------------------------------------- toolbar */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 4px var(--mpp-space-2);
+  border-bottom: 1px solid var(--mpp-ui-border);
+  background: var(--mpp-ui-surface);
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.toolbar-group + .toolbar-group::before {
+  width: 1px;
+  height: 18px;
+  margin: 0 6px;
+  background: var(--mpp-ui-border);
+  content: '';
+}
+
+/* ---------------------------------------------------------------- outline */
+.outline {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: 248px;
+  min-height: 0;
+  border-right: 1px solid var(--mpp-ui-border);
+  background: var(--mpp-ui-surface);
+  animation: mpp-slide-in-left var(--mpp-duration-slow) var(--mpp-ease);
+}
+
+.outline-header {
+  display: flex;
+  align-items: center;
+  gap: var(--mpp-space-2);
+  height: 40px;
+  padding: 0 var(--mpp-space-2) 0 var(--mpp-space-3);
+  color: var(--mpp-ui-text-muted);
+}
+
+.outline-title {
+  flex: 1;
+  font-size: var(--mpp-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.outline-empty {
+  padding: var(--mpp-space-3);
+  color: var(--mpp-ui-text-faint);
+  font-size: var(--mpp-text-sm);
+}
+
+.outline nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 var(--mpp-space-2) var(--mpp-space-4);
+}
+
+.outline-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.outline-item {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  padding: 5px var(--mpp-space-2);
+  border: 0;
+  border-radius: var(--mpp-radius-sm);
+  background: transparent;
+  color: var(--mpp-ui-text-muted);
+  font-size: var(--mpp-text-md);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition:
+    background-color var(--mpp-duration) var(--mpp-ease),
+    color var(--mpp-duration) var(--mpp-ease);
+}
+
+.outline-item[data-level='1'] {
+  color: var(--mpp-ui-text);
+  font-weight: 600;
+}
+
+.outline-item:hover {
+  background: var(--mpp-hover);
+  color: var(--mpp-ui-text);
+}
+
+.outline-item.is-selected {
+  background: var(--mpp-accent-soft);
+  color: var(--mpp-ui-accent);
+}
+
+/* ------------------------------------------------------------- status bar */
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: var(--mpp-statusbar-height);
+  padding: 0 var(--mpp-space-2);
+  border-top: 1px solid var(--mpp-ui-border);
+  background: var(--mpp-ui-surface);
+  color: var(--mpp-ui-text-muted);
+  font-size: var(--mpp-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.statusbar-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 20px;
+  padding: 0 var(--mpp-space-2);
+  border-radius: 5px;
+  white-space: nowrap;
+}
+
+.statusbar-button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  transition:
+    background-color var(--mpp-duration) var(--mpp-ease),
+    color var(--mpp-duration) var(--mpp-ease);
+}
+
+.statusbar-button:hover {
+  background: var(--mpp-hover);
+  color: var(--mpp-ui-text);
+}
+
+.statusbar-mode {
+  color: var(--mpp-ui-accent);
+  font-weight: 600;
+}
+
+.statusbar-spacer {
+  flex: 1;
+}
+
+.statusbar-saved[data-state='unsaved'] {
+  color: var(--mpp-ui-warning);
+}
+
+.statusbar-saved[data-state='saved'] {
+  color: var(--mpp-ui-success);
+}
+
+.statusbar-saved[data-state='new'] {
+  color: var(--mpp-ui-text-faint);
+}
+
+/* ------------------------------------------------------------- focus mode */
+/* The hidden top bar keeps its space (and the macOS drag region); paint that band in the
+   editor colour so the writing surface reaches the top edge without a grey strip. */
+.app.is-focus-mode {
+  background: var(--mpp-ui-editor-background);
+}
+
+.is-focus-mode .topbar {
+  border-bottom-color: transparent;
+  background: var(--mpp-ui-editor-background);
+  opacity: 0;
+  transition: opacity var(--mpp-duration-slow) var(--mpp-ease);
+}
+
+.is-focus-mode .topbar:hover,
+.is-focus-mode .topbar:focus-within {
+  opacity: 1;
+}
+
+.focus-exit {
+  position: fixed;
+  right: var(--mpp-space-4);
+  bottom: var(--mpp-space-4);
+  z-index: 50;
+  opacity: 0.35;
+  transition: opacity var(--mpp-duration) var(--mpp-ease);
+}
+
+.focus-exit:hover,
+.focus-exit:focus-visible {
+  opacity: 1;
+}
+
+@keyframes mpp-slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+}

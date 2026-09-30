@@ -1,0 +1,159 @@
+/*
+ * Static syntax highlighting: maps the `tok-*` classes emitted by @lezer/highlight's
+ * `classHighlighter` (and its superset `mppTokenHighlighter`) to the active code
+ * theme. Used by exported HTML and by static code previews; the live editors use
+ * the equivalent `mppCodeMirrorTheme`.
+ */
+
+.tok-comment {
+  color: var(--mpp-code-comment);
+  font-style: var(--mpp-code-comment-style);
+}
+
+.tok-keyword {
+  color: var(--mpp-code-keyword);
+  font-weight: var(--mpp-code-keyword-weight);
+}
+
+.tok-keyword.tok-controlKeyword {
+  color: var(--mpp-code-control-keyword);
+}
+
+.tok-operator {
+  color: var(--mpp-code-operator);
+}
+
+.tok-punctuation {
+  color: var(--mpp-code-punctuation);
+}
+
+.tok-string {
+  color: var(--mpp-code-string);
+}
+
+.tok-string2 {
+  color: var(--mpp-code-regexp);
+}
+
+.tok-string2.tok-escape {
+  color: var(--mpp-code-escape);
+}
+
+.tok-number,
+.tok-literal,
+.tok-changed {
+  color: var(--mpp-code-number);
+}
+
+.tok-bool {
+  color: var(--mpp-code-boolean);
+}
+
+.tok-atom,
+.tok-variableName2,
+.tok-variableName.tok-constant {
+  color: var(--mpp-code-constant);
+}
+
+.tok-variableName,
+.tok-labelName,
+.tok-local {
+  color: var(--mpp-code-variable);
+}
+
+.tok-propertyName {
+  color: var(--mpp-code-property);
+}
+
+.tok-variableName.tok-function,
+.tok-propertyName.tok-function,
+.tok-function,
+.tok-macroName {
+  color: var(--mpp-code-function);
+}
+
+.tok-typeName,
+.tok-namespace {
+  color: var(--mpp-code-type);
+}
+
+.tok-className {
+  color: var(--mpp-code-class-name);
+}
+
+.tok-tagName {
+  color: var(--mpp-code-tag);
+}
+
+.tok-attributeName {
+  color: var(--mpp-code-attribute);
+}
+
+.tok-meta {
+  color: var(--mpp-code-meta);
+}
+
+.tok-invalid {
+  color: var(--mpp-code-invalid);
+}
+
+.tok-inserted {
+  color: var(--mpp-code-string);
+}
+
+.tok-deleted {
+  color: var(--mpp-code-invalid);
+}
+
+.tok-special {
+  color: var(--mpp-code-escape);
+}
+
+.tok-definition {
+  font-weight: inherit;
+}
+
+/* Markdown / prose tokens */
+.tok-heading {
+  color: var(--mpp-code-heading);
+  font-weight: 700;
+}
+
+.tok-emphasis {
+  color: var(--mpp-code-emphasis);
+  font-style: italic;
+}
+
+.tok-strong {
+  color: var(--mpp-code-strong);
+  font-weight: 700;
+}
+
+.tok-strikethrough {
+  text-decoration: line-through;
+}
+
+.tok-link {
+  color: var(--mpp-code-link);
+}
+
+.tok-url {
+  color: var(--mpp-code-link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.tok-quote {
+  color: var(--mpp-code-quote);
+  font-style: italic;
+}
+
+.tok-monospace {
+  color: var(--mpp-code-string);
+}
+
+/*
+ * `.tok-list` is deliberately unstyled: lezer tags whole Markdown list nodes with it,
+ * so a colour would paint every list item's text. List markers carry `.tok-meta`
+ * (processingInstruction), like in the Markdown mode editor.
+ */

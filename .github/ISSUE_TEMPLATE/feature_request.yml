@@ -1,0 +1,54 @@
+name: Feature request
+description: Suggest an idea or improvement for MarkDown++.
+title: '[Feature]: '
+labels: [enhancement, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping to shape MarkDown++. Please check
+        [existing issues](https://github.com/Amadudl/MarkDownPlusPlus/issues) and the
+        [user guide](https://github.com/Amadudl/MarkDownPlusPlus/blob/main/docs/user-guide.md) first.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what makes it hard today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How should MarkDown++ behave? Mention the mode (Visual / Markdown) if relevant.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Visual mode (WYSIWYG) editing
+        - Markdown mode (source) editing
+        - Themes and styling
+        - Files, tabs and sessions
+        - Export (HTML / PDF)
+        - Installation and packaging
+        - Other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I would like to work on this myself (see CONTRIBUTING.md).

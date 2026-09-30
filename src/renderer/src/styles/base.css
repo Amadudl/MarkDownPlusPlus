@@ -1,0 +1,452 @@
+/* ---------------------------------------------------------------- tokens */
+:root {
+  --mpp-font-ui: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mpp-font-mono: 'JetBrains Mono Variable', 'Cascadia Code', 'Fira Code', Menlo, Consolas, monospace;
+  --mpp-text-xs: 11px;
+  --mpp-text-sm: 12px;
+  --mpp-text-md: 13px;
+  --mpp-text-lg: 15px;
+
+  /* 8px grid */
+  --mpp-space-1: 4px;
+  --mpp-space-2: 8px;
+  --mpp-space-3: 12px;
+  --mpp-space-4: 16px;
+  --mpp-space-5: 24px;
+  --mpp-space-6: 32px;
+  --mpp-space-7: 48px;
+
+  --mpp-radius-sm: 6px;
+  --mpp-radius-md: 8px;
+  --mpp-radius-lg: 10px;
+  --mpp-radius-xl: 14px;
+
+  --mpp-duration: 150ms;
+  --mpp-duration-slow: 220ms;
+  --mpp-ease: cubic-bezier(0.2, 0, 0, 1);
+  --mpp-ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
+
+  --mpp-topbar-height: 40px;
+  --mpp-statusbar-height: 26px;
+
+  /* Derived colours: tints of theme colours only. */
+  --mpp-hover: color-mix(in srgb, var(--mpp-ui-text) 7%, transparent);
+  --mpp-pressed: color-mix(in srgb, var(--mpp-ui-text) 11%, transparent);
+  --mpp-accent-soft: color-mix(in srgb, var(--mpp-ui-accent) 14%, transparent);
+  --mpp-accent-ring: color-mix(in srgb, var(--mpp-ui-focus-ring) 45%, transparent);
+  /* Shadows and the modal backdrop come from the theme engine (tuned per light/dark kind). */
+  --mpp-scrim: var(--mpp-ui-backdrop);
+  --mpp-shadow-sm: var(--mpp-ui-shadow-sm);
+  --mpp-shadow-md: var(--mpp-ui-shadow-md);
+  --mpp-shadow-lg: var(--mpp-ui-shadow-lg);
+}
+
+/* ----------------------------------------------------------------- reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: var(--mpp-ui-background);
+  color: var(--mpp-ui-text);
+  font-family: var(--mpp-font-ui);
+  font-size: var(--mpp-text-md);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
+  user-select: none;
+}
+
+#root {
+  zoom: var(--mpp-zoom, 1);
+  width: calc(100% / var(--mpp-zoom, 1));
+  height: calc(100% / var(--mpp-zoom, 1));
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+input,
+textarea,
+[contenteditable='true'] {
+  user-select: text;
+}
+
+::selection {
+  background: var(--mpp-ui-selection);
+}
+
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--mpp-ui-focus-ring);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.muted {
+  color: var(--mpp-ui-text-muted);
+}
+
+/* ------------------------------------------------------------ scrollbars */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--mpp-ui-text) 16%, transparent);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--mpp-ui-text) 28%, transparent);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* --------------------------------------------------------------- buttons */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 var(--mpp-space-3);
+  border: 1px solid var(--mpp-ui-border);
+  border-radius: var(--mpp-radius-sm);
+  background: var(--mpp-ui-surface-elevated);
+  color: var(--mpp-ui-text);
+  font-size: var(--mpp-text-md);
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: var(--mpp-shadow-sm);
+  transition:
+    background-color var(--mpp-duration) var(--mpp-ease),
+    border-color var(--mpp-duration) var(--mpp-ease),
+    transform var(--mpp-duration) var(--mpp-ease);
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--mpp-ui-border-strong);
+  background: color-mix(in srgb, var(--mpp-ui-surface-elevated) 92%, var(--mpp-ui-text));
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(0.5px);
+}
+
+.button:disabled {
+  opacity: 0.45;
+}
+
+.button-primary {
+  border-color: transparent;
+  background: var(--mpp-ui-accent);
+  color: var(--mpp-ui-accent-text);
+}
+
+.button-primary:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--mpp-ui-accent-hover);
+}
+
+.button-danger {
+  border-color: transparent;
+  background: var(--mpp-ui-danger);
+  color: var(--mpp-ui-accent-text);
+}
+
+.button-danger:hover:not(:disabled) {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--mpp-ui-danger) 88%, var(--mpp-ui-text));
+}
+
+.button-ghost {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--mpp-ui-text-muted);
+}
+
+.button-ghost:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--mpp-hover);
+  color: var(--mpp-ui-text);
+}
+
+.button-small {
+  height: 26px;
+  padding: 0 var(--mpp-space-2);
+  font-size: var(--mpp-text-sm);
+}
+
+.icon-button {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--mpp-radius-sm);
+  background: transparent;
+  color: var(--mpp-ui-text-muted);
+  transition:
+    background-color var(--mpp-duration) var(--mpp-ease),
+    color var(--mpp-duration) var(--mpp-ease);
+}
+
+.icon-button:hover:not(:disabled) {
+  background: var(--mpp-hover);
+  color: var(--mpp-ui-text);
+}
+
+.icon-button:active:not(:disabled) {
+  background: var(--mpp-pressed);
+}
+
+.icon-button[aria-pressed='true'] {
+  background: var(--mpp-accent-soft);
+  color: var(--mpp-ui-accent);
+}
+
+.icon-button:disabled {
+  opacity: 0.4;
+}
+
+.confirm-group {
+  display: inline-flex;
+  gap: var(--mpp-space-2);
+}
+
+/* ---------------------------------------------------------------- inputs */
+.text-input,
+.select {
+  height: 30px;
+  min-width: 0;
+  padding: 0 var(--mpp-space-2);
+  border: 1px solid var(--mpp-ui-border);
+  border-radius: var(--mpp-radius-sm);
+  background: var(--mpp-ui-surface-sunken);
+  color: var(--mpp-ui-text);
+  font-size: var(--mpp-text-md);
+  transition:
+    border-color var(--mpp-duration) var(--mpp-ease),
+    box-shadow var(--mpp-duration) var(--mpp-ease);
+}
+
+.text-input:hover,
+.select:hover {
+  border-color: var(--mpp-ui-border-strong);
+}
+
+.text-input:focus-visible,
+.select:focus-visible {
+  border-color: var(--mpp-ui-focus-ring);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--mpp-accent-ring);
+}
+
+.text-input[aria-invalid='true'] {
+  border-color: var(--mpp-ui-danger);
+}
+
+.text-input::placeholder {
+  color: var(--mpp-ui-text-faint);
+}
+
+.select {
+  padding-right: var(--mpp-space-5);
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--mpp-ui-text-muted) 50%),
+    linear-gradient(135deg, var(--mpp-ui-text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 13px,
+    calc(100% - 10px) 13px;
+  background-size: 4px 4px;
+  background-repeat: no-repeat;
+}
+
+.select option {
+  background: var(--mpp-ui-surface-elevated);
+  color: var(--mpp-ui-text);
+}
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 6px;
+  border: 1px solid var(--mpp-ui-border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--mpp-ui-surface-sunken);
+  color: var(--mpp-ui-text-muted);
+  font-family: var(--mpp-font-ui);
+  font-size: var(--mpp-text-xs);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--mpp-accent-soft);
+  color: var(--mpp-ui-accent);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* -------------------------------------------------------------- tooltips */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]::after {
+  position: absolute;
+  z-index: 1000;
+  top: calc(100% + 6px);
+  left: 50%;
+  padding: 5px 8px;
+  border-radius: var(--mpp-radius-sm);
+  background: var(--mpp-ui-text);
+  box-shadow: var(--mpp-shadow-md);
+  color: var(--mpp-ui-background);
+  /*
+   * The empty alternative text ("/ ''") keeps the visual tooltip out of the
+   * accessibility tree; otherwise Chromium appends it to accessible names and exposes
+   * it as stray static text. Elements expose the same information through
+   * aria-label / aria-description instead.
+   */
+  content: attr(data-tooltip) / '';
+  font-size: var(--mpp-text-sm);
+  font-weight: 500;
+  line-height: 1.2;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -2px);
+  transition:
+    opacity var(--mpp-duration) var(--mpp-ease),
+    transform var(--mpp-duration) var(--mpp-ease);
+  white-space: nowrap;
+}
+
+[data-tooltip][data-shortcut]::after {
+  content: attr(data-tooltip) '\2003' attr(data-shortcut) / '';
+}
+
+[data-tooltip][data-tooltip-placement='top']::after {
+  top: auto;
+  bottom: calc(100% + 6px);
+  transform: translate(-50%, 2px);
+}
+
+[data-tooltip][data-tooltip-placement='left']::after {
+  left: auto;
+  right: 0;
+  transform: translate(0, -2px);
+}
+
+[data-tooltip][data-tooltip-placement='start']::after {
+  left: 0;
+  transform: translate(0, -2px);
+}
+
+[data-tooltip][data-tooltip-placement='top-start']::after {
+  top: auto;
+  bottom: calc(100% + 6px);
+  left: 0;
+  transform: translate(0, 2px);
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition-delay: 450ms;
+}
+
+[data-tooltip][data-tooltip-placement='left']:hover::after,
+[data-tooltip][data-tooltip-placement='left']:focus-visible::after,
+[data-tooltip][data-tooltip-placement='start']:hover::after,
+[data-tooltip][data-tooltip-placement='start']:focus-visible::after,
+[data-tooltip][data-tooltip-placement='top-start']:hover::after,
+[data-tooltip][data-tooltip-placement='top-start']:focus-visible::after {
+  transform: translate(0, 0);
+}
+
+/* --------------------------------------------------------- reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+}

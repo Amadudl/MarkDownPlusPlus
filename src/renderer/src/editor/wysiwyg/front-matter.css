@@ -1,0 +1,55 @@
+/*
+ * Read-only YAML front matter panel above the Visual mode document (see front-matter.ts).
+ * It sits in the same centred column as the editable content.
+ */
+
+.mpp-document .mpp-front-matter {
+  box-sizing: border-box;
+  width: min(var(--mpp-el-content-width), calc(100% - 2 * clamp(48px, 7vw, 96px)));
+  margin: 40px auto 0;
+  border: 1px solid var(--mpp-ui-border);
+  border-radius: var(--mpp-radius-md);
+  background: var(--mpp-ui-surface-sunken);
+  color: var(--mpp-ui-text-muted);
+  user-select: text;
+}
+
+.mpp-document .mpp-front-matter[hidden] {
+  display: none;
+}
+
+.mpp-document .mpp-front-matter-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 8px 12px 0;
+  font-family: var(--mpp-font-ui);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.mpp-document .mpp-front-matter-title {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.mpp-document .mpp-front-matter-hint {
+  color: var(--mpp-ui-text-faint);
+}
+
+.mpp-document .mpp-front-matter-code {
+  margin: 0;
+  padding: 6px 12px 10px;
+  overflow-x: auto;
+  font-family: var(--mpp-el-mono-font);
+  font-size: var(--mpp-el-code-font-size);
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.mpp-document .mpp-front-matter:not([hidden]) + .milkdown .ProseMirror {
+  padding-top: 24px;
+}

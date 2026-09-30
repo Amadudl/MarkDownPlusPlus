@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Hardened-runtime entitlements for MarkDown++ (main app and helpers).
+
+  Only the entitlement that Electron needs to run under the hardened runtime is
+  granted. Everything else (unsigned executable memory, network server, camera,
+  microphone, location, library validation opt-out, dyld environment variables, ...)
+  stays disabled.
+
+  - allow-jit: V8 generates machine code at runtime in MAP_JIT pages. This matches
+    the defaults of @electron/osx-sign for the main app, renderer and GPU helpers.
+    allow-unsigned-executable-memory is deliberately NOT granted: V8/Chromium on
+    macOS use MAP_JIT, and non-MAP_JIT writable+executable memory would only make
+    code injection easier.
+-->
+<plist version="1.0">
+  <dict>
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+  </dict>
+</plist>

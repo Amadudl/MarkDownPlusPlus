@@ -1,0 +1,144 @@
+# electron-builder configuration for MarkDown++.
+# Reference: https://www.electron.build/configuration
+# Local packaging: `npm run package` (current OS) or `npm run package:{mac,win,linux}`.
+# Release packaging runs in .github/workflows/release.yml (see docs/release.md).
+
+appId: io.github.amadudl.markdownplusplus
+productName: MarkDown++
+copyright: Copyright © 2026 Amadeus Lederle
+
+directories:
+  output: release
+  buildResources: build
+
+# Only the compiled bundles are shipped; sources, tests and source maps are not. All
+# npm dependencies are bundled by Vite (main, preload and renderer), so node_modules is
+# excluded explicitly: electron-builder would otherwise copy every production dependency
+# into app.asar.
+files:
+  - out/**/*
+  - package.json
+  - '!**/*.map'
+  - '!node_modules/**/*'
+
+asar: true
+
+# Electron fuses are flipped at package time and cannot be changed at runtime.
+# They remove attack surface that a desktop editor never needs.
+electronFuses:
+  runAsNode: false
+  enableCookieEncryption: true
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+  grantFileProtocolExtraPrivileges: false
+  # Flipping fuses invalidates the ad-hoc signature of unsigned arm64 macOS builds;
+  # re-sign them ad hoc so they still launch. Properly signed builds are unaffected.
+  resetAdHocDarwinSignature: true
+
+artifactName: MarkDownPlusPlus-${version}-${os}-${arch}.${ext}
+
+fileAssociations:
+  - ext: [md, markdown, mdown, mkd, mkdn]
+    name: Markdown
+    description: Markdown document
+    mimeType: text/markdown
+    role: Editor
+    rank: Default
+
+mac:
+  category: public.app-category.productivity
+  icon: build/icon.png
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+    - target: zip
+      arch: [x64, arm64]
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  # Notarisation runs automatically when the APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD /
+  # APPLE_TEAM_ID (or APPLE_API_KEY*) environment variables are present, and is
+  # skipped otherwise. See docs/release.md.
+
+dmg:
+  title: ${productName} ${version}
+  writeUpdateInfo: false
+
+win:
+  icon: build/icon.png
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+    - target: portable
+      arch: [x64, arm64]
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: MarkDown++
+  deleteAppDataOnUninstall: false
+  license: LICENSE
+  artifactName: MarkDownPlusPlus-${version}-${os}-${arch}-setup.${ext}
+
+portable:
+  artifactName: MarkDownPlusPlus-${version}-${os}-${arch}-portable.${ext}
+
+linux:
+  # macOS and Windows name the bundle / executable after productName (MarkDown++.app,
+  # MarkDown++.exe); Linux uses a lowercase, shell-friendly binary name.
+  executableName: markdownplusplus
+  # Electron uses package.json#desktopName as the Wayland app_id / window class; naming the
+  # installed .desktop file after it (and letting electron-builder derive StartupWMClass
+  # from it) lets desktop environments associate running windows with the launcher entry.
+  syncDesktopName: true
+  icon: build/icons
+  category: Office;TextEditor
+  synopsis: Modern WYSIWYG Markdown editor
+  description: >-
+    MarkDown++ is a fast, modern, cross-platform Markdown editor focused on
+    best-in-class visual (WYSIWYG) editing, with a one-click switch to the raw
+    Markdown source.
+  maintainer: Amadeus Lederle <24881416+Amadudl@users.noreply.github.com>
+  vendor: Amadeus Lederle
+  # text/markdown is added from fileAssociations; list only the extra legacy type here.
+  mimeTypes:
+    - text/x-markdown
+  desktop:
+    entry:
+      Name: MarkDown++
+      GenericName: Markdown Editor
+      Comment: Edit Markdown visually or as source
+      Keywords: markdown;md;editor;wysiwyg;notes;writing;
+      Terminal: 'false'
+  target:
+    - target: AppImage
+      arch: [x64, arm64]
+    - target: deb
+      arch: [x64, arm64]
+    - target: rpm
+      arch: [x64]
+    - target: tar.gz
+      arch: [x64, arm64]
+
+# electron-builder's AppImage desktop entry passes --no-sandbox by default. MarkDown++
+# never disables the Chromium sandbox, so the launcher entry starts the app without it.
+appImage:
+  executableArgs: []
+
+deb:
+  packageName: markdownplusplus
+
+rpm:
+  packageName: markdownplusplus
+
+publish:
+  provider: github
+  owner: Amadudl
+  repo: MarkDownPlusPlus
+  releaseType: draft

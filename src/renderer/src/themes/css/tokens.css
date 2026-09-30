@@ -1,0 +1,141 @@
+/*
+ * MarkDown++ design tokens.
+ *
+ * 1. Static tokens (typography, radii, spacing, motion, layering) shared by the whole UI.
+ * 2. Default theme variables: the values of the default trio (Midnight UI theme,
+ *    Tokyo Night code theme, Modern element style) so the app never renders
+ *    unstyled before the theme engine runs. `applyTheme()` overrides them inline on
+ *    `document.documentElement`; `themes.test.ts` keeps this block in sync with the presets.
+ */
+
+:root {
+  --mpp-font-ui: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mpp-font-mono:
+    'JetBrains Mono Variable', 'JetBrains Mono', 'Cascadia Code', 'Fira Code', Menlo, Consolas, monospace;
+
+  --mpp-text-xs: 11px;
+  --mpp-text-sm: 12px;
+  --mpp-text-md: 13px;
+  --mpp-text-lg: 14px;
+  --mpp-text-xl: 16px;
+
+  --mpp-radius-xs: 4px;
+  --mpp-radius-sm: 6px;
+  --mpp-radius-md: 8px;
+  --mpp-radius-lg: 12px;
+  --mpp-radius-xl: 16px;
+  --mpp-radius-full: 999px;
+
+  --mpp-space-1: 4px;
+  --mpp-space-2: 8px;
+  --mpp-space-3: 12px;
+  --mpp-space-4: 16px;
+  --mpp-space-5: 20px;
+  --mpp-space-6: 24px;
+  --mpp-space-8: 32px;
+
+  --mpp-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --mpp-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --mpp-duration-fast: 120ms;
+  --mpp-duration: 180ms;
+  --mpp-duration-slow: 280ms;
+
+  --mpp-z-dropdown: 40;
+  --mpp-z-overlay: 50;
+  --mpp-z-modal: 60;
+  --mpp-z-toast: 70;
+}
+
+/* Default theme: Midnight / Tokyo Night / Modern. */
+:root {
+  color-scheme: dark;
+  --mpp-ui-background: #0e1016;
+  --mpp-ui-surface: #13161e;
+  --mpp-ui-surface-elevated: #1a1e29;
+  --mpp-ui-surface-sunken: #0a0c11;
+  --mpp-ui-border: #232734;
+  --mpp-ui-border-strong: #343a4b;
+  --mpp-ui-text: #e5e7ee;
+  --mpp-ui-text-muted: #9ba2b6;
+  --mpp-ui-text-faint: #6a7186;
+  --mpp-ui-accent: #6d5ce8;
+  --mpp-ui-accent-hover: #7d6ef0;
+  --mpp-ui-accent-text: #ffffff;
+  --mpp-ui-selection: #7c6cf24d;
+  --mpp-ui-focus-ring: #9d91ff;
+  --mpp-ui-danger: #f26d7d;
+  --mpp-ui-warning: #f0b35a;
+  --mpp-ui-success: #4fd1a1;
+  --mpp-ui-editor-background: #11131a;
+  --mpp-ui-editor-text: #d9dce6;
+  --mpp-ui-link: #a89cff;
+  --mpp-ui-heading: #f3f4f8;
+  --mpp-ui-quote-bar: #7c6cf2;
+  --mpp-ui-quote-background: #7c6cf214;
+  --mpp-ui-table-border: #262a37;
+  --mpp-ui-table-header-background: #181b25;
+  --mpp-ui-table-stripe: #ffffff06;
+  --mpp-ui-inline-code-background: #7c6cf21f;
+  --mpp-ui-inline-code-text: #c9c1ff;
+  --mpp-ui-mark: #f0b35a47;
+  --mpp-ui-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --mpp-ui-shadow-md: 0 4px 14px rgb(0 0 0 / 0.35), 0 1px 3px rgb(0 0 0 / 0.3);
+  --mpp-ui-shadow-lg: 0 18px 48px rgb(0 0 0 / 0.5), 0 4px 12px rgb(0 0 0 / 0.35);
+  --mpp-ui-backdrop: rgb(0 0 0 / 0.55);
+  --mpp-code-background: #1a1b26;
+  --mpp-code-foreground: #a9b1d6;
+  --mpp-code-gutter-background: #1a1b26;
+  --mpp-code-gutter-foreground: #3b4261;
+  --mpp-code-line-highlight: #1e2030;
+  --mpp-code-selection: #283457;
+  --mpp-code-cursor: #c0caf5;
+  --mpp-code-border: #16161e;
+  --mpp-code-comment: #565f89;
+  --mpp-code-keyword: #bb9af7;
+  --mpp-code-control-keyword: #bb9af7;
+  --mpp-code-operator: #89ddff;
+  --mpp-code-punctuation: #89ddff;
+  --mpp-code-string: #9ece6a;
+  --mpp-code-number: #ff9e64;
+  --mpp-code-boolean: #ff9e64;
+  --mpp-code-constant: #ff9e64;
+  --mpp-code-variable: #c0caf5;
+  --mpp-code-property: #73daca;
+  --mpp-code-function: #7aa2f7;
+  --mpp-code-type: #2ac3de;
+  --mpp-code-class-name: #2ac3de;
+  --mpp-code-tag: #f7768e;
+  --mpp-code-attribute: #bb9af7;
+  --mpp-code-regexp: #b4f9f8;
+  --mpp-code-escape: #89ddff;
+  --mpp-code-heading: #7aa2f7;
+  --mpp-code-emphasis: #bb9af7;
+  --mpp-code-strong: #e0af68;
+  --mpp-code-link: #73daca;
+  --mpp-code-quote: #9aa5ce;
+  --mpp-code-meta: #89ddff;
+  --mpp-code-invalid: #db4b4b;
+  --mpp-code-comment-style: italic;
+  --mpp-code-keyword-weight: 400;
+  --mpp-el-body-font: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mpp-el-heading-font: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mpp-el-mono-font:
+    'JetBrains Mono Variable', 'JetBrains Mono', 'Cascadia Code', 'Fira Code', Menlo, Consolas, monospace;
+  --mpp-el-base-font-size: 16px;
+  --mpp-el-line-height: 1.7;
+  --mpp-el-paragraph-spacing: 1em;
+  --mpp-el-content-width: 780px;
+  --mpp-el-h1-size: 2.25em;
+  --mpp-el-h2-size: 1.75em;
+  --mpp-el-h3-size: 1.375em;
+  --mpp-el-h4-size: 1.15em;
+  --mpp-el-h5-size: 1em;
+  --mpp-el-h6-size: 0.875em;
+  --mpp-el-heading-weight: 700;
+  --mpp-el-heading-letter-spacing: -0.02em;
+  --mpp-el-heading-color: var(--mpp-ui-heading);
+  --mpp-el-code-radius: 12px;
+  --mpp-el-code-font-size: 0.875em;
+  --mpp-el-list-spacing: 0.35em;
+  --mpp-el-image-radius: 12px;
+}
