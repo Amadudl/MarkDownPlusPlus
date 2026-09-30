@@ -13,14 +13,16 @@ editing — and a single switch that takes you to the raw Markdown source and ba
 [![CodeQL](https://github.com/Amadudl/MarkDownPlusPlus/actions/workflows/codeql.yml/badge.svg)](https://github.com/Amadudl/MarkDownPlusPlus/actions/workflows/codeql.yml)
 [![Latest release](https://img.shields.io/github/v/release/Amadudl/MarkDownPlusPlus?display_name=tag&sort=semver)](https://github.com/Amadudl/MarkDownPlusPlus/releases/latest)
 [![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Linux-6246EA)](#download-and-installation)
-[![License: source-available, non-commercial](https://img.shields.io/badge/license-source--available%2C%20non--commercial-orange)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-22c55e)](LICENSE)
+[![Contributions welcome](https://img.shields.io/badge/contributions-welcome-6246EA)](CONTRIBUTING.md)
 
 [Download](#download-and-installation) ·
 [Tutorial](docs/tutorial.md) ·
 [User guide](docs/user-guide.md) ·
 [Theming](docs/theming.md) ·
 [Shortcuts](docs/keyboard-shortcuts.md) ·
-[Contributing](CONTRIBUTING.md)
+[Contributing](CONTRIBUTING.md) ·
+[Join the community](https://github.com/Amadudl/MarkDownPlusPlus/discussions)
 
 <br />
 
@@ -180,9 +182,16 @@ details and [docs/architecture.md](docs/architecture.md) for how the pieces fit 
 
 ## Contributing
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) and our
-[Code of Conduct](CODE_OF_CONDUCT.md) first. AI coding agents must follow
-[AGENTS.md](AGENTS.md). For questions, see [SUPPORT.md](SUPPORT.md).
+MarkDown++ is built in the open, and contributions of every size are welcome.
+
+- **Use it:** download the latest release and tell us what gets in your way.
+- **Shape it:** share ideas and questions in [GitHub Discussions](https://github.com/Amadudl/MarkDownPlusPlus/discussions).
+- **Improve it:** browse [`good first issue`](https://github.com/Amadudl/MarkDownPlusPlus/labels/good%20first%20issue) tasks, fix a bug, improve docs or contribute a theme.
+- **Spread it:** star the repository and share MarkDown++ with people who write in Markdown.
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) and our [Code of Conduct](CODE_OF_CONDUCT.md)
+before contributing. AI coding agents must follow [AGENTS.md](AGENTS.md). For help, see
+[SUPPORT.md](SUPPORT.md).
 
 ## Security
 
@@ -191,11 +200,7 @@ vulnerability reporting as described in [SECURITY.md](SECURITY.md).
 
 ## License
 
-MarkDown++ is **source-available, not open source.** The source code is publicly
-visible, but it is not licensed under an OSI-approved license. You may use, study,
-modify, and share it for non-commercial purposes. Selling the software or using it
-commercially requires prior written permission from Amadeus Lederle.
-
-See [LICENSE](LICENSE) (MarkDownPlusPlus Non-Commercial License 1.0) for the full terms.
+MarkDown++ is free and open-source software licensed under the permissive
+[MIT License](LICENSE). Use it, study it, modify it and share it — including commercially.
 
 Copyright © 2026 Amadeus Lederle.

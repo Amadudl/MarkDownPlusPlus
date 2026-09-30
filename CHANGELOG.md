@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- MarkDown++ is now open-source software under the permissive MIT License.
+- The project page now makes community discussions, beginner-friendly issues and ways to
+  contribute easier to discover.
+
 ## [1.0.0] - 2026-09-29
 
 The first stable release.

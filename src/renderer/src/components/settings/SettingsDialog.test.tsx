@@ -45,7 +45,7 @@ describe('SettingsDialog', () => {
     await user.keyboard('{ArrowRight}');
     expect(useUi.getState().settingsSection).toBe('appearance');
     await user.click(screen.getByRole('tab', { name: 'About' }));
-    expect(screen.getByText(/Non-commercial license/)).toBeInTheDocument();
+    expect(screen.getByText(/open-source software under the MIT License/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Done' }));
     expect(useUi.getState().dialog).toBeNull();
   });

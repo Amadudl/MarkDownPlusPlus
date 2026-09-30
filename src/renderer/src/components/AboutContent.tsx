@@ -61,7 +61,7 @@ export function AboutContent(): JSX.Element {
         </button>
       </div>
       <p className="about-license">
-        Non-commercial license. Free for personal and non-commercial use — see the LICENSE file for details.
+        Free and open-source software under the MIT License — use, modify and share it freely.
       </p>
     </div>
   );

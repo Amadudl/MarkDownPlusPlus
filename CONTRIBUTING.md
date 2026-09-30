@@ -5,8 +5,8 @@ themes and code are all welcome. This guide explains how we work so your contrib
 can be merged quickly.
 
 By participating you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md).
-MarkDown++ is [source-available under a non-commercial license](LICENSE); by submitting a
-contribution you agree that it is distributed under the same license.
+MarkDown++ is [open-source software under the MIT License](LICENSE). By submitting a
+contribution, you agree that it is distributed under the same license.
 
 - [Ways to contribute](#ways-to-contribute)
 - [Development setup](#development-setup)

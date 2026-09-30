@@ -30,7 +30,7 @@ first — your question may already be answered.
 
 ## Commercial use
 
-MarkDown++ is source-available for **non-commercial** use (see [LICENSE](LICENSE)).
+MarkDown++ is free and open-source software under the [MIT License](LICENSE).
 For permission to use it commercially, contact the copyright holder, Amadeus Lederle,
 through [GitHub](https://github.com/Amadudl).
 

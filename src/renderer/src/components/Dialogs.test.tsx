@@ -81,7 +81,7 @@ describe('AboutDialog', () => {
     // Enter right after opening must not launch the browser.
     expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus();
     expect(screen.getByText('44.4.5')).toBeInTheDocument();
-    expect(screen.getByText(/Non-commercial license/)).toBeInTheDocument();
+    expect(screen.getByText(/open-source software under the MIT License/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Source code' }));
     await user.click(screen.getByRole('button', { name: 'Report an issue' }));
     await user.click(screen.getByRole('button', { name: 'License' }));

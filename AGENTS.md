@@ -130,8 +130,7 @@ Do **not**:
   failing tests to make a build pass;
 - silence warnings instead of fixing them;
 - rename or remove released theme ids, setting keys or command ids (they are persisted);
-- modify `LICENSE`, or describe the project as "open source" (it is source-available,
-  non-commercial);
+- modify `LICENSE` without the copyright holder's explicit approval;
 - commit generated output (`out/`, `release/`, `coverage/`, reports) or local files.
 
 ## Definition of done

@@ -87,7 +87,7 @@ describe('App', () => {
     expect(await screen.findByRole('tablist', { name: 'Settings sections' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Done' }));
     act(() => api.emit.menuCommand(CommandId.HelpAbout));
-    expect(await screen.findByText(/Non-commercial license/)).toBeInTheDocument();
+    expect(await screen.findByText(/open-source software under the MIT License/)).toBeInTheDocument();
   });
 
   it('asks about unsaved documents when the window closes', async () => {
