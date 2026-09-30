@@ -216,15 +216,19 @@ describe('inlineLocalImages', () => {
     );
   });
 
-  it('embeds images whose path contains a double quote in a single-quoted attribute', async () => {
-    const png = join(dir, 'say "cheese".png');
-    await writeFile(png, Buffer.from([7]));
-    const src = toMppFileUrl(png);
-    const html = `<img src='${src}'><img src="${src.replace(/"/g, '&quot;')}">`;
-    expect(await inlineLocalImages(html)).toBe(
-      '<img src=\'data:image/png;base64,Bw==\'><img src="data:image/png;base64,Bw==">',
-    );
-  });
+  // Windows forbids `"` in file names, so such a path cannot exist there.
+  it.skipIf(process.platform === 'win32')(
+    'embeds images whose path contains a double quote in a single-quoted attribute',
+    async () => {
+      const png = join(dir, 'say "cheese".png');
+      await writeFile(png, Buffer.from([7]));
+      const src = toMppFileUrl(png);
+      const html = `<img src='${src}'><img src="${src.replace(/"/g, '&quot;')}">`;
+      expect(await inlineLocalImages(html)).toBe(
+        '<img src=\'data:image/png;base64,Bw==\'><img src="data:image/png;base64,Bw==">',
+      );
+    },
+  );
 
   it('stops embedding once the size budget is exhausted', async () => {
     const exporter = await import('./exporter');

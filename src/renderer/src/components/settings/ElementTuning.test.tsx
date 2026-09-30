@@ -124,5 +124,5 @@ describe('ElementTuning', () => {
     expect(latest.list).toEqual({ bullet: 'arrow', spacing: 0.5 });
     expect(latest.horizontalRule.variant).toBe('ornament');
     expect(latest.image).toEqual({ radius: 16, shadow: !base.image.shadow, centered: !base.image.centered });
-  });
+  }, 20_000); // ~40 user-event interactions: slow on shared Windows CI runners.
 });

@@ -69,10 +69,12 @@ jobs:
 
       - name: End-to-end tests (Linux)
         if: runner.os == 'Linux'
+        timeout-minutes: 20
         run: xvfb-run -a npm run test:e2e
 
       - name: End-to-end tests
         if: runner.os != 'Linux'
+        timeout-minutes: 20
         run: npm run test:e2e
 
       - name: Upload Playwright report

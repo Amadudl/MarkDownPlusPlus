@@ -1,3 +1,4 @@
+import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const electron = vi.hoisted(() => ({
@@ -78,11 +79,11 @@ describe('showSaveMarkdownDialog', () => {
     expect(await showSaveMarkdownDialog(parent, 'My/Notes')).toBe('/home/me/Documents/x.md');
     expect(electron.dialog.showSaveDialog).toHaveBeenCalledWith(
       parent,
-      expect.objectContaining({ defaultPath: '/home/me/Documents/Notes.md' }),
+      expect.objectContaining({ defaultPath: join('/', 'home', 'me', 'Documents', 'Notes.md') }),
     );
     await showSaveMarkdownDialog(null, 'draft.markdown');
     expect(electron.dialog.showSaveDialog).toHaveBeenLastCalledWith(
-      expect.objectContaining({ defaultPath: '/home/me/Documents/draft.markdown' }),
+      expect.objectContaining({ defaultPath: join('/', 'home', 'me', 'Documents', 'draft.markdown') }),
     );
   });
 
@@ -91,7 +92,7 @@ describe('showSaveMarkdownDialog', () => {
     await showSaveMarkdownDialog(parent, 'spec.md', '/work/project/docs');
     expect(electron.dialog.showSaveDialog).toHaveBeenLastCalledWith(
       parent,
-      expect.objectContaining({ defaultPath: '/work/project/docs/spec.md' }),
+      expect.objectContaining({ defaultPath: join('/', 'work', 'project', 'docs', 'spec.md') }),
     );
   });
 
@@ -109,11 +110,17 @@ describe('showExportDialog', () => {
     expect(await showExportDialog(parent, 'doc.md', 'pdf')).toBe('/out/doc.pdf');
     expect(electron.dialog.showSaveDialog).toHaveBeenLastCalledWith(
       parent,
-      expect.objectContaining({ defaultPath: '/home/me/Documents/doc.pdf', title: 'Export as PDF' }),
+      expect.objectContaining({
+        defaultPath: join('/', 'home', 'me', 'Documents', 'doc.pdf'),
+        title: 'Export as PDF',
+      }),
     );
     await showExportDialog(null, 'page.htm', 'html');
     expect(electron.dialog.showSaveDialog).toHaveBeenLastCalledWith(
-      expect.objectContaining({ defaultPath: '/home/me/Documents/page.htm', title: 'Export as HTML' }),
+      expect.objectContaining({
+        defaultPath: join('/', 'home', 'me', 'Documents', 'page.htm'),
+        title: 'Export as HTML',
+      }),
     );
   });
 
@@ -122,7 +129,7 @@ describe('showExportDialog', () => {
     await showExportDialog(parent, 'spec.md', 'pdf', '/work');
     expect(electron.dialog.showSaveDialog).toHaveBeenLastCalledWith(
       parent,
-      expect.objectContaining({ defaultPath: '/work/spec.pdf' }),
+      expect.objectContaining({ defaultPath: join('/', 'work', 'spec.pdf') }),
     );
   });
 
@@ -131,7 +138,7 @@ describe('showExportDialog', () => {
     await showSaveMarkdownDialog(parent, 'spec.md', '/work/project/docs');
     expect(electron.dialog.showSaveDialog).toHaveBeenLastCalledWith(
       parent,
-      expect.objectContaining({ defaultPath: '/work/project/docs/spec.md' }),
+      expect.objectContaining({ defaultPath: join('/', 'work', 'project', 'docs', 'spec.md') }),
     );
   });
 

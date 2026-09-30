@@ -239,12 +239,12 @@ describe('FileService', () => {
     const service = new FileService(registry);
     const file = join(dir, 'plain.txt');
     await writeFile(file, 'x');
-    // A path "through" a regular file fails with ENOTDIR.
+    // A path "through" a regular file fails with ENOTDIR (Windows reports ENOENT).
     const path = join(file, 'child.md');
     registry.add(path);
     await expect(service.save({ path, content: 'x', lineEnding: 'lf', hasBom: false })).rejects.toMatchObject(
       {
-        code: 'ENOTDIR',
+        code: process.platform === 'win32' ? 'ENOENT' : 'ENOTDIR',
       },
     );
   });

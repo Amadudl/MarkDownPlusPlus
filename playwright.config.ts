@@ -19,6 +19,8 @@ export default defineConfig({
   workers: 1,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
+  // Fail fast on CI when something is systematically broken (e.g. the app does not start).
+  maxFailures: process.env.CI ? 10 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: { trace: 'retain-on-failure', screenshot: 'only-on-failure' },
 });

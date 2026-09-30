@@ -1,6 +1,6 @@
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { extractFileArgs, fileArgToPath, PendingFileQueue } from './launch';
@@ -64,7 +64,13 @@ describe('file URIs from Linux desktop launchers (%U)', () => {
       join(dir, 'a.md'),
     );
     expect(fileArgToPath('file://remote-host/share/a.md', '/x')).toBeNull();
-    expect(fileArgToPath('relative.md', '/base')).toBe('/base/relative.md');
+    expect(fileArgToPath('FILE://Remote-Host/share/a.md', '/x')).toBeNull();
+    expect(fileArgToPath('file://a b/x.md', '/x')).toBeNull();
+    expect(fileArgToPath('file:///a%2Fb.md', '/x')).toBeNull();
+    expect(
+      fileArgToPath(pathToFileURL(join(dir, 'a.md')).href.replace('file://', 'file://localhost'), '/x'),
+    ).toBe(join(dir, 'a.md'));
+    expect(fileArgToPath('relative.md', '/base')).toBe(resolve('/base', 'relative.md'));
     const argv = ['/app', 'file://remote-host/share/a.md', pathToFileURL(join(dir, 'missing.md')).href];
     expect(extractFileArgs(argv, { cwd: dir, defaultApp: false })).toEqual([]);
   });

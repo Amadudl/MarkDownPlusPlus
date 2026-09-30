@@ -29,8 +29,19 @@ export interface FileArgsOptions {
  */
 export function fileArgToPath(arg: string, cwd: string): string | null {
   if (!/^file:\/\//i.test(arg)) return resolve(cwd, arg);
+  let url: URL;
   try {
-    return fileURLToPath(arg);
+    url = new URL(arg);
+  } catch {
+    return null;
+  }
+  // Only local files: on Windows `fileURLToPath` would turn `file://host/share/x.md`
+  // into a UNC path, and merely checking that path connects to the (possibly
+  // attacker-controlled) SMB server and leaks NTLM credentials.
+  // (The URL parser already maps `file://localhost/` to an empty host.)
+  if (url.hostname !== '') return null;
+  try {
+    return fileURLToPath(url);
   } catch {
     return null;
   }

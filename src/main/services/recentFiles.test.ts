@@ -1,8 +1,11 @@
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MAX_RECENT_FILES, RecentFiles } from './recentFiles';
+
+/** A platform-absolute path: `/one.md` stays POSIX on macOS/Linux and becomes `D:\\one.md` on Windows. */
+const abs = (path: string): string => resolve(path);
 
 let dir: string;
 let store: string;
@@ -39,29 +42,29 @@ describe('RecentFiles', () => {
 
   it('de-duplicates case-insensitively on macOS and Windows only', async () => {
     const mac = new RecentFiles(store, { platform: 'darwin' });
-    await mac.add('/Docs/A.md');
-    await mac.add('/docs/a.md');
-    expect(mac.list().map((file) => file.path)).toEqual(['/docs/a.md']);
+    await mac.add(abs('/Docs/A.md'));
+    await mac.add(abs('/docs/a.md'));
+    expect(mac.list().map((file) => file.path)).toEqual([abs('/docs/a.md')]);
 
     const linux = new RecentFiles(join(dir, 'linux.json'), { platform: 'linux' });
-    await linux.add('/Docs/A.md');
-    await linux.add('/docs/a.md');
+    await linux.add(abs('/Docs/A.md'));
+    await linux.add(abs('/docs/a.md'));
     expect(linux.list()).toHaveLength(2);
   });
 
   it(`caps the list at ${MAX_RECENT_FILES} entries`, async () => {
     const recent = new RecentFiles(store);
-    for (let index = 0; index < MAX_RECENT_FILES + 5; index += 1) await recent.add(`/f${index}.md`);
+    for (let index = 0; index < MAX_RECENT_FILES + 5; index += 1) await recent.add(abs(`/f${index}.md`));
     expect(recent.list()).toHaveLength(MAX_RECENT_FILES);
-    expect(recent.list()[0]?.path).toBe(`/f${MAX_RECENT_FILES + 4}.md`);
+    expect(recent.list()[0]?.path).toBe(abs(`/f${MAX_RECENT_FILES + 4}.md`));
   });
 
   it('persists and reloads, dropping malformed entries', async () => {
     const recent = new RecentFiles(store, { now: () => 5 });
-    await recent.add('/one.md');
+    await recent.add(abs('/one.md'));
     expect(JSON.parse(await readFile(store, 'utf8'))).toEqual({
       version: 1,
-      files: [{ path: '/one.md', openedAt: 5 }],
+      files: [{ path: abs('/one.md'), openedAt: 5 }],
     });
 
     await writeFile(
@@ -69,19 +72,19 @@ describe('RecentFiles', () => {
       JSON.stringify({
         version: 1,
         files: [
-          { path: '/one.md', openedAt: 5 },
+          { path: abs('/one.md'), openedAt: 5 },
           { path: 'relative.md', openedAt: 1 },
-          { path: '/two.md', openedAt: -1 },
+          { path: abs('/two.md'), openedAt: -1 },
           'garbage',
-          { path: '/one.md', openedAt: 2 },
-          { path: '/three.md', openedAt: 1 },
+          { path: abs('/one.md'), openedAt: 2 },
+          { path: abs('/three.md'), openedAt: 1 },
         ],
       }),
     );
     const reloaded = new RecentFiles(store, { platform: 'linux' });
     expect(await reloaded.load()).toEqual([
-      { path: '/one.md', openedAt: 5 },
-      { path: '/three.md', openedAt: 1 },
+      { path: abs('/one.md'), openedAt: 5 },
+      { path: abs('/three.md'), openedAt: 1 },
     ]);
   });
 
@@ -119,10 +122,12 @@ describe('RecentFiles', () => {
     const listener = vi.fn();
     recent.onChange(listener);
     try {
-      await expect(recent.add('/doc.md')).resolves.toEqual([expect.objectContaining({ path: '/doc.md' })]);
+      await expect(recent.add(abs('/doc.md'))).resolves.toEqual([
+        expect.objectContaining({ path: abs('/doc.md') }),
+      ]);
       await expect(recent.clear()).resolves.toBeUndefined();
       expect(listener).toHaveBeenCalledTimes(2);
-      expect(listener).toHaveBeenNthCalledWith(1, [expect.objectContaining({ path: '/doc.md' })]);
+      expect(listener).toHaveBeenNthCalledWith(1, [expect.objectContaining({ path: abs('/doc.md') })]);
       expect(warn).toHaveBeenCalledWith(expect.stringContaining('Could not save the recent files list'));
     } finally {
       warn.mockRestore();
@@ -134,14 +139,14 @@ describe('RecentFiles', () => {
     const recent = new RecentFiles(store, { hooks });
     const listener = vi.fn();
     const unsubscribe = recent.onChange(listener);
-    await recent.add('/x.md');
-    expect(hooks.addRecentDocument).toHaveBeenCalledWith('/x.md');
+    await recent.add(abs('/x.md'));
+    expect(hooks.addRecentDocument).toHaveBeenCalledWith(abs('/x.md'));
     await recent.clear();
     expect(hooks.clearRecentDocuments).toHaveBeenCalled();
     expect(recent.list()).toEqual([]);
     expect(listener).toHaveBeenLastCalledWith([]);
     unsubscribe();
-    await recent.add('/y.md');
+    await recent.add(abs('/y.md'));
     expect(listener).toHaveBeenCalledTimes(2);
   });
 });

@@ -13,6 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The project page now makes community discussions, beginner-friendly issues and ways to
   contribute easier to discover.
 
+### Security
+
+- Windows: `file://` URIs with a remote host passed on the command line (for example
+  `file://server/share/notes.md`) are now ignored instead of being opened as a UNC network
+  path, which could connect to an attacker-controlled SMB server and leak NTLM credentials.
+
+### Fixed
+
+- The unit test suite now passes on Windows (platform-neutral path expectations; POSIX-only
+  permission tests run only where POSIX permissions exist).
+
 ## [1.0.0] - 2026-09-29
 
 The first stable release.

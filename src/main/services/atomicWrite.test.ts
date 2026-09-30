@@ -25,6 +25,14 @@ afterEach(async () => {
   await rm(dir, { recursive: true, force: true });
 });
 
+/**
+ * POSIX permission bits, file owners and read-only folders do not exist on Windows
+ * (NTFS uses ACLs; `chmod` only toggles the read-only attribute and `process.getuid`
+ * is undefined), so those scenarios cannot occur there. The Windows-specific paths
+ * are covered by the platform-injected tests below.
+ */
+const windows = process.platform === 'win32';
+
 describe('writeFileAtomic', () => {
   it('creates a new file and leaves no temporary files behind', async () => {
     const target = join(dir, 'new.md');
@@ -33,7 +41,7 @@ describe('writeFileAtomic', () => {
     expect(await readdir(dir)).toEqual(['new.md']);
   });
 
-  it('replaces existing content and keeps the permission bits', async () => {
+  it.skipIf(windows)('replaces existing content and keeps the permission bits', async () => {
     const target = join(dir, 'doc.md');
     await writeFile(target, 'old');
     await chmod(target, 0o640);
@@ -42,7 +50,7 @@ describe('writeFileAtomic', () => {
     expect((await stat(target)).mode & 0o777).toBe(0o640);
   });
 
-  it('applies an explicit mode', async () => {
+  it.skipIf(windows)('applies an explicit mode', async () => {
     const target = join(dir, 'secret.json');
     await writeFileAtomic(target, '{}', { mode: 0o600 });
     expect((await stat(target)).mode & 0o777).toBe(0o600);
@@ -75,7 +83,7 @@ describe('writeFileAtomic', () => {
     expect((await readdir(dir)).sort()).toEqual(['doc.md', 'hardlink.md']);
   });
 
-  it('writes files owned by another user in place so their owner is kept', async () => {
+  it.skipIf(windows)('writes files owned by another user in place so their owner is kept', async () => {
     const target = join(dir, 'shared.md');
     await writeFile(target, 'old');
     const inode = (await stat(target)).ino;
@@ -103,7 +111,7 @@ describe('writeFileAtomic', () => {
     expect(await readFile(target, 'utf8')).toBe('new');
   });
 
-  it('applies an explicit mode to a file written in place', async () => {
+  it.skipIf(windows)('applies an explicit mode to a file written in place', async () => {
     const target = join(dir, 'doc.md');
     await writeFile(target, 'old');
     await link(target, join(dir, 'other.md'));
@@ -126,7 +134,7 @@ describe('writeFileAtomic', () => {
     }
   });
 
-  it('still fails for new files in a folder that does not allow creating files', async () => {
+  it.skipIf(windows)('still fails for new files in a folder that does not allow creating files', async () => {
     const folder = join(dir, 'locked');
     await mkdir(folder);
     await chmod(folder, 0o555);
