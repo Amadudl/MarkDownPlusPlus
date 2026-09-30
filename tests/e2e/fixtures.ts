@@ -242,6 +242,8 @@ export interface LaunchOptions {
   readonly settings?: Readonly<Record<string, unknown>>;
   /** Console messages the test provokes on purpose during startup (see {@link ConsoleCollector.allow}). */
   readonly allowConsole?: readonly RegExp[];
+  /** Extra command-line switches for Electron/Chromium, e.g. `--no-sandbox`. */
+  readonly switches?: readonly string[];
 }
 
 /** A running instance of the application. */
@@ -326,7 +328,7 @@ export const test = base.extend<Fixtures>({
       }
       if (!existsSync(MAIN_ENTRY)) throw new Error(`${MAIN_ENTRY} is missing: run "npm run build:app" first`);
       const electronApp = await electron.launch({
-        args: [APP_DIR, ...(options.files ?? [])],
+        args: [...(options.switches ?? []), APP_DIR, ...(options.files ?? [])],
         cwd: workspace.dir,
         env: { ...process.env, MPP_USER_DATA_DIR: userDataDir, NODE_ENV: 'test' },
       });

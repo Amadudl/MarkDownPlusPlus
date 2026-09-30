@@ -141,6 +141,13 @@ the `.deb`/`.rpm` package instead — do **not** run MarkDown++ with `--no-sandb
 > `--no-sandbox` so that it does not crash. On such systems, prefer the `.deb` / `.rpm`
 > package, which keeps the sandbox enabled.
 
+Whenever MarkDown++ detects that it runs without the sandbox, it shows a warning at
+startup with **Continue** and **Quit**. Tick **Don't show this again** to silence it
+(stored as `sandbox-warning.json` in the data folder; delete that file to get the warning
+back). To keep using the AppImage with the sandbox, allow unprivileged user namespaces,
+for example with an AppArmor profile for the AppImage or, system-wide and less strict,
+`sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0`.
+
 ## Portable mode and the data folder
 
 MarkDown++ stores settings, the recent-files list, the session (open tabs) and window
@@ -172,12 +179,13 @@ Outside portable mode, data lives in Electron's standard per-user directory:
 | Windows | `%APPDATA%\MarkDown++\`                                          |
 | Linux   | `$XDG_CONFIG_HOME/MarkDown++/` (usually `~/.config/MarkDown++/`) |
 
-| File                | Contents                                                                   |
-| ------------------- | -------------------------------------------------------------------------- |
-| `settings.json`     | All [settings](user-guide.md#settings-reference), including custom themes. |
-| `recent-files.json` | The recent-files list.                                                     |
-| `session.json`      | The tabs to restore on the next start.                                     |
-| `window-state.json` | Window size, position and maximised state.                                 |
+| File                   | Contents                                                                   |
+| ---------------------- | -------------------------------------------------------------------------- |
+| `settings.json`        | All [settings](user-guide.md#settings-reference), including custom themes. |
+| `recent-files.json`    | The recent-files list.                                                     |
+| `session.json`         | The tabs to restore on the next start.                                     |
+| `window-state.json`    | Window size, position and maximised state.                                 |
+| `sandbox-warning.json` | Only present after "Don't show this again" in the sandbox warning.         |
 
 The folder also contains Chromium's cache. Deleting the folder resets MarkDown++ to its
 defaults. Your documents are never stored there.

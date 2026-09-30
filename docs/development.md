@@ -311,6 +311,9 @@ exceptions that `npm outdated` reports:
   24.x; newer majors would type APIs the app cannot use at runtime. Bump it together with
   an Electron major that moves to a newer Node line.
 
+Both pins are encoded as `ignore` rules in `.github/dependabot.yml`, so Dependabot does
+not propose the incompatible majors; lift the rule together with the pin.
+
 The `engines` field (`node >=22.12.0`) only describes the Node version needed for the
 tooling (Vite, Vitest, ESLint, electron-builder); the app itself always runs on the Node
 bundled with Electron.

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, nativeTheme, screen, session } from 'electron';
+import { app, BrowserWindow, dialog, nativeTheme, screen, session } from 'electron';
 import { CommandId, type CommandIdValue } from '../shared/commands';
 import { IpcChannel } from '../shared/ipc';
 import type { AppInfo, FileReadResult } from '../shared/types';
@@ -15,6 +15,7 @@ import {
   type SecurityOptions,
 } from './security';
 import { installRemoteImageGuard } from './remoteImages';
+import { SANDBOX_WARNING_FILE, warnIfSandboxDisabled } from './sandboxWarning';
 import { FileService } from './services/fileService';
 import { FileWatcher } from './services/fileWatcher';
 import { PathRegistry } from './services/pathRegistry';
@@ -58,6 +59,7 @@ export class Application {
   private services: Services | null = null;
   private quitting = false;
   private isPortable = false;
+  private sandboxChecked = false;
 
   constructor(private readonly platform: NodeJS.Platform = process.platform) {
     this.security = { devServerUrl: resolveDevServerUrl(process.env, app.isPackaged) };
@@ -96,7 +98,10 @@ export class Application {
       ...services,
       appInfo: this.appInfo(),
       devServerUrl: this.security.devServerUrl,
-      takePendingFiles: () => this.readForOpening(services, this.pending.take()),
+      takePendingFiles: () => {
+        this.checkSandboxOnce();
+        return this.readForOpening(services, this.pending.take());
+      },
     });
     this.installMenu(services);
     services.recent.onChange(() => this.installMenu(services));
@@ -105,6 +110,25 @@ export class Application {
     });
     this.createWindow(services);
     return true;
+  }
+
+  /**
+   * Warns (once per launch, when the first renderer is ready) if Chromium runs
+   * without its sandbox, e.g. because the AppImage launcher added `--no-sandbox`.
+   */
+  private checkSandboxOnce(): void {
+    if (this.sandboxChecked) return;
+    this.sandboxChecked = true;
+    const parent = AppWindow.all()[0]?.browserWindow;
+    void warnIfSandboxDisabled({
+      sandboxDisabled: app.commandLine.hasSwitch('no-sandbox'),
+      isAppImage: Boolean(process.env.APPIMAGE),
+      stateFile: userDataFile(SANDBOX_WARNING_FILE),
+      showMessageBox: (options) =>
+        parent ? dialog.showMessageBox(parent, options) : dialog.showMessageBox(options),
+    }).then((outcome) => {
+      if (outcome === 'quit') app.quit();
+    });
   }
 
   private fileArgs(argv: readonly string[], cwd: string): string[] {

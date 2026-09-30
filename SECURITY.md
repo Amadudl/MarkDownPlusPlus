@@ -65,6 +65,9 @@ arbitrary files** (a document can only _display_ local image files, see
   `src/shared/types.ts`) through `contextBridge`. It never passes raw Electron objects to
   the page.
 - DevTools are disabled in packaged builds.
+- MarkDown++ never disables the Chromium sandbox itself. If it was started with
+  `--no-sandbox` (for example by the AppImage launcher on systems without unprivileged
+  user namespaces), it warns the user at startup and recommends the `.deb`/`.rpm` package.
 
 ### IPC
 

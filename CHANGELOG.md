@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- MarkDown++ now warns at startup when it runs without the Chromium sandbox (for example
+  because the AppImage launcher added `--no-sandbox` on Ubuntu 24.04), with **Continue**,
+  **Quit** and **Don't show this again**, and recommends the `.deb`/`.rpm` package.
+
+### Changed
+
+- Dependabot no longer proposes `@types/node` majors beyond the Node line bundled with
+  Electron (24) or TypeScript versions not yet supported by typescript-eslint; `@types/node`
+  is pinned to 24.x again.
+
 ## [1.0.1] - 2026-09-30
 
 ### Changed

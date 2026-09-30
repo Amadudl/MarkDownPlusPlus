@@ -34,11 +34,19 @@ const app = await vi.hoisted(async () => {
     getVersion: vi.fn(() => '1.0.0'),
     addRecentDocument: vi.fn(),
     clearRecentDocuments: vi.fn(),
+    commandLine: { hasSwitch: vi.fn<(name: string) => boolean>(() => false) },
   });
 });
 
+const dialog = vi.hoisted(() => ({
+  showMessageBox: vi.fn<(...args: unknown[]) => Promise<{ response: number; checkboxChecked: boolean }>>(() =>
+    Promise.resolve({ response: 0, checkboxChecked: false }),
+  ),
+}));
+
 vi.mock('electron', () => ({
   app,
+  dialog,
   BrowserWindow: { getFocusedWindow: () => h.state.focused },
   nativeTheme: { shouldUseDarkColors: true },
   screen: { getAllDisplays: () => [{ workArea: { x: 0, y: 0, width: 1440, height: 900 } }] },
@@ -57,6 +65,7 @@ const windows = vi.hoisted(() => {
       return [...FakeAppWindow.list];
     }
     readonly id = nextId++;
+    browserWindow: { id: number } | undefined = undefined;
     isRendererReady = false;
     send = vi.fn();
     focus = vi.fn();
@@ -128,6 +137,8 @@ beforeEach(async () => {
   app.quit.mockClear();
   app.setAppUserModelId.mockClear();
   app.addRecentDocument.mockClear();
+  app.commandLine.hasSwitch.mockReturnValue(false);
+  dialog.showMessageBox.mockClear();
   process.argv = ['/electron'];
   delete process.env.MPP_DEV_SERVER_URL;
 });
@@ -499,5 +510,52 @@ describe('Application', () => {
     windows.FakeAppWindow.list[0]?.close();
     app.emit('activate');
     expect(windows.FakeAppWindow.list[0]?.options.backgroundColor).toBe('#f7f7f8');
+  });
+
+  describe('sandbox warning', () => {
+    const originalAppImage = process.env.APPIMAGE;
+    afterEach(() => {
+      if (originalAppImage === undefined) delete process.env.APPIMAGE;
+      else process.env.APPIMAGE = originalAppImage;
+    });
+
+    it('stays silent while the sandbox is active', async () => {
+      await new Application('linux').start();
+      await deps().takePendingFiles();
+      await flush();
+      expect(app.commandLine.hasSwitch).toHaveBeenCalledWith('no-sandbox');
+      expect(dialog.showMessageBox).not.toHaveBeenCalled();
+    });
+
+    it('warns once, modal to the first window, when started with --no-sandbox', async () => {
+      app.commandLine.hasSwitch.mockReturnValue(true);
+      process.env.APPIMAGE = '/opt/MarkDownPlusPlus.AppImage';
+      await new Application('linux').start();
+      const [window] = windows.FakeAppWindow.list;
+      if (window) window.browserWindow = { id: 7 };
+      await deps().takePendingFiles();
+      await deps().takePendingFiles();
+      await flush();
+      expect(dialog.showMessageBox).toHaveBeenCalledTimes(1);
+      expect(dialog.showMessageBox).toHaveBeenCalledWith(
+        { id: 7 },
+        expect.objectContaining({ detail: expect.stringContaining('AppImage launcher') as unknown }),
+      );
+      expect(app.quit).not.toHaveBeenCalled();
+    });
+
+    it('shows an unparented warning without a window and quits on request', async () => {
+      app.commandLine.hasSwitch.mockReturnValue(true);
+      delete process.env.APPIMAGE;
+      dialog.showMessageBox.mockResolvedValueOnce({ response: 1, checkboxChecked: false });
+      await new Application('linux').start();
+      windows.FakeAppWindow.list = [];
+      await deps().takePendingFiles();
+      await flush();
+      expect(dialog.showMessageBox).toHaveBeenCalledWith(
+        expect.objectContaining({ detail: expect.stringContaining('--no-sandbox option') as unknown }),
+      );
+      expect(app.quit).toHaveBeenCalled();
+    });
   });
 });
