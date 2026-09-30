@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import packageJson from '../../package.json' with { type: 'json' };
 import { expect, IS_MAC, pressShortcut, sourceEditor, tab, test } from './fixtures';
 
 function palette(window: Page) {
@@ -99,7 +100,7 @@ test.describe('Command palette', () => {
     await palette(window).input.press('Enter');
     const about = window.getByRole('dialog', { name: 'About MarkDown++' });
     await expect(about).toBeVisible();
-    await expect(about).toContainText('1.0.0');
+    await expect(about).toContainText(packageJson.version);
   });
 
   test('the shortcut toggles the palette closed again', async ({ mpp }) => {
