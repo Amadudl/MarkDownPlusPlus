@@ -138,7 +138,10 @@ test.describe('Documents', () => {
     await pressShortcut(mpp, 'CmdOrCtrl+S');
     await expect(tab(window, 'fresh.md')).toBeVisible();
     await expectClean(window, 'fresh.md');
-    expect(await workspace.read('fresh.md')).toBe('Fresh words\n');
+    // New documents use the platform line ending (setting `editor.newLineEnding: 'system'`).
+    expect(await workspace.read('fresh.md')).toBe(
+      `Fresh words${process.platform === 'win32' ? '\r\n' : '\n'}`,
+    );
     const saves = await mpp.stubs.calls('save');
     expect(saves).toHaveLength(1);
     expect(saves[0]?.detail).toMatch(/^Save Markdown File\|.*Untitled-1\.md$/);

@@ -1,5 +1,6 @@
 import type { Locator } from '@playwright/test';
 import type { DomImage } from './dom';
+import { toMppFileUrl } from '../../src/shared/file-url';
 import { expect, test, visualEditor } from './fixtures';
 
 /** Waits until an `<img>` finished loading and returns its natural width and source. */
@@ -17,7 +18,7 @@ test.describe('Images', () => {
     await expect(image).toBeVisible();
     const { width, src } = await loadedImage(image);
     expect(width).toBe(2);
-    expect(src).toBe(`mpp-file://local/${encodeURIComponent(workspace.path('images/pixel.png'))}`);
+    expect(src).toBe(toMppFileUrl(workspace.path('images/pixel.png')));
   });
 
   test('images are resolved relative to the document folder', async ({ launch, workspace }) => {
@@ -28,7 +29,7 @@ test.describe('Images', () => {
     const app = await launch({ files: [path] });
     const image = visualEditor(app.window).locator('img').first();
     const { src } = await loadedImage(image);
-    expect(src).toBe(`mpp-file://local/${encodeURIComponent(workspace.path('images/pixel.png'))}`);
+    expect(src).toBe(toMppFileUrl(workspace.path('images/pixel.png')));
   });
 
   test('remote images are replaced by a placeholder when they are disabled', async ({
