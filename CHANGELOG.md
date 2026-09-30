@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-09-30
+
 ### Security
 
 - MarkDown++ now warns at startup when it runs without the Chromium sandbox (for example
@@ -187,6 +189,7 @@ The first stable release.
   CodeQL, least-privilege workflows, signing credentials scoped to the packaging step,
   and release packaging without dependency lifecycle scripts.
 
-[Unreleased]: https://github.com/Amadudl/MarkDownPlusPlus/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/Amadudl/MarkDownPlusPlus/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/Amadudl/MarkDownPlusPlus/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/Amadudl/MarkDownPlusPlus/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Amadudl/MarkDownPlusPlus/releases/tag/v1.0.0

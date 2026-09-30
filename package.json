@@ -1,7 +1,7 @@
 {
   "name": "markdownplusplus",
   "productName": "MarkDown++",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A fast, modern, cross-platform WYSIWYG Markdown editor with a one-click switch between visual and source editing.",
   "author": {
     "name": "Amadeus Lederle",
