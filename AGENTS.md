@@ -65,9 +65,10 @@ npm run test:e2e       # builds the app and runs Playwright against Electron
 ```
 
 `npm run verify` runs all five in sequence. On headless Linux use
-`xvfb-run -a npm run test:e2e`. The E2E suite runs its windows in background mode
-(`MPP_E2E_BACKGROUND=1`, set by `playwright.config.ts`: invisible, click-through, never
-focused), so a developer can keep working on the same machine. When you launch the app
+`xvfb-run -a npm run test:e2e`. Locally on macOS and Windows the E2E suite runs its
+windows in background mode (`MPP_E2E_BACKGROUND=1`, set by `playwright.config.ts`:
+invisible, click-through, never focused), so a developer can keep working on the same
+machine; it is off on CI and on Linux. When you launch the app
 yourself (screenshots, manual checks), also pass a fresh `MPP_USER_DATA_DIR` and
 `MPP_E2E_BACKGROUND=1`, and always terminate the process afterwards. In E2E tests press
 application shortcuts with `pressShortcut()` from `tests/e2e/fixtures.ts`

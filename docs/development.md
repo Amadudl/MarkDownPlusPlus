@@ -199,8 +199,10 @@ npx playwright show-report           # open the last HTML report
 On Linux without a display, run `xvfb-run -a npm run test:e2e`. **Every UI change needs
 E2E coverage.** Traces and screenshots of failed tests are kept in `test-results/`.
 
-**Background mode.** `playwright.config.ts` sets `MPP_E2E_BACKGROUND=1` unless it is
-already set. In this mode (`isBackgroundTestMode` in `src/main/window.ts`) every test
+**Background mode.** On macOS and Windows, `playwright.config.ts` sets
+`MPP_E2E_BACKGROUND=1` unless it is already set. It stays off on CI and on Linux: Electron
+cannot make windows transparent there, and an unfocused, click-through window under Xvfb
+stops producing frames, which makes the suite much slower and flaky. In this mode (`isBackgroundTestMode` in `src/main/window.ts`) every test
 window is shown inactive, fully transparent, click-through and without a Dock or taskbar
 entry, and background throttling is off, so the suite never steals focus and you can keep
 working while it runs. Playwright drives the page through the DevTools protocol, which is
