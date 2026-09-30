@@ -37,6 +37,9 @@ export default defineConfig({
           include: ['src/renderer/**/*.test.{ts,tsx}'],
           setupFiles: ['src/renderer/src/test/setup.ts'],
           css: false,
+          // jsdom + user-event interaction tests take up to ~1.6 s locally but several
+          // times longer on shared Windows CI runners; 5 s (the default) is too tight there.
+          testTimeout: 20_000,
         },
       },
     ],

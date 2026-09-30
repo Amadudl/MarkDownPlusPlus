@@ -22,7 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - The unit test suite now passes on Windows (platform-neutral path expectations; POSIX-only
-  permission tests run only where POSIX permissions exist).
+  permission tests run only where POSIX permissions exist; renderer interaction tests have
+  enough time on slow CI runners).
 
 ## [1.0.0] - 2026-09-29
 
