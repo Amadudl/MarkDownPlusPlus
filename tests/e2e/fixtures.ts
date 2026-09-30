@@ -329,6 +329,9 @@ export const test = base.extend<Fixtures>({
       if (!existsSync(MAIN_ENTRY)) throw new Error(`${MAIN_ENTRY} is missing: run "npm run build:app" first`);
       const electronApp = await electron.launch({
         args: [...(options.switches ?? []), APP_DIR, ...(options.files ?? [])],
+        // Playwright adds `--no-sandbox` on Linux unless told otherwise; test the app the way
+        // users run it (CI allows unprivileged user namespaces, see .github/workflows/ci.yml).
+        chromiumSandbox: true,
         cwd: workspace.dir,
         env: { ...process.env, MPP_USER_DATA_DIR: userDataDir, NODE_ENV: 'test' },
       });
