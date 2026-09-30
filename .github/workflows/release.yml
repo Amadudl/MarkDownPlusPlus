@@ -50,9 +50,37 @@ jobs:
             exit 1
           fi
 
+  # electron-builder creates the GitHub release itself when none exists. With three packaging
+  # jobs running in parallel, two of them could each create a separate draft for the same
+  # tag and split the artifacts between them, so the draft is created once, up front.
+  draft-release:
+    name: Create draft release
+    needs: verify
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Create the draft release the packaging jobs upload into
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            echo "Release $TAG already exists"
+          else
+            gh release create "$TAG" --repo "$REPO" --draft --verify-tag \
+              --title "MarkDown++ ${TAG#v}" \
+              --notes "Packages are being built and uploaded by the release workflow."
+          fi
+
   package:
     name: Package (${{ matrix.os }})
-    needs: verify
+    needs: [verify, draft-release]
+    # Also runs for manual (workflow_dispatch) runs, where no draft release is created.
+    if: ${{ !cancelled() && needs.verify.result == 'success' && needs.draft-release.result != 'failure' }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     permissions:

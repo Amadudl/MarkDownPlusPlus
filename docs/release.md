@@ -48,9 +48,11 @@ sections _Added_, _Changed_, _Deprecated_, _Removed_, _Fixed_, _Security_.
 6. The **Release** workflow runs:
    - **verify** — lint, format check, type-check and unit tests with coverage; checks that
      the tag matches the `package.json` version;
+   - **draft-release** — creates one **draft** GitHub release for the tag (so the parallel
+     packaging jobs cannot each create their own draft and split the artifacts);
    - **package** — on macOS, Windows and Linux in parallel: `npm ci`, `npm run build` and
-     `npx electron-builder --publish always`. electron-builder uploads all artifacts to a
-     **draft** GitHub release for the tag.
+     `npx electron-builder --publish always`. electron-builder uploads all artifacts to the
+     draft release.
 7. Open the draft release on GitHub, paste the changelog section as release notes, check
    that all artifacts are present (see the table below), download and smoke-test at least
    one build per OS, then **publish** the release.
@@ -63,7 +65,8 @@ sections _Added_, _Changed_, _Deprecated_, _Removed_, _Fixed_, _Security_.
 
 A release can also be started manually with **Actions → Release → Run workflow**; the tag
 check is skipped in that case, and artifacts are attached to a draft release for the
-current `package.json` version.
+current `package.json` version. No draft is created up front for manual runs, so check
+afterwards that exactly one draft release holds all artifacts.
 
 ## Code signing and notarisation
 

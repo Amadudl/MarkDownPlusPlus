@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The release workflow creates the draft release once before packaging, so parallel
+  packaging jobs can no longer create duplicate drafts that split the downloads.
+- Faster, reliable E2E runs on Linux and CI: the invisible background mode for test
+  windows is now used only on local macOS and Windows machines.
+
 ## [1.0.2] - 2026-09-30
 
 ### Security
