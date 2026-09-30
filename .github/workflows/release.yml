@@ -85,6 +85,9 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: write
+      # Build provenance attestations (Sigstore, keyless) for the packaged files.
+      id-token: write
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -171,6 +174,21 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx --no-install electron-builder --publish always
 
+      # Instead of a paid code-signing certificate, every download gets a free, verifiable
+      # SLSA build provenance attestation: `gh attestation verify <file> --repo <owner/repo>`
+      # proves that the file was built by this workflow from this repository and commit.
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            release/*.dmg
+            release/*.zip
+            release/*.exe
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
+            release/*.tar.gz
+
       - name: Upload artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -186,3 +204,25 @@ jobs:
             release/latest*.yml
           retention-days: 30
           if-no-files-found: error
+
+  checksums:
+    name: Publish checksums
+    needs: package
+    if: ${{ startsWith(github.ref, 'refs/tags/v') && needs.package.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Attach SHA256SUMS.txt for all downloads to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          mkdir downloads && cd downloads
+          gh release download "$TAG" --repo "$REPO" --pattern 'MarkDownPlusPlus-*'
+          find . -maxdepth 1 -type f -name 'MarkDownPlusPlus-*' ! -name '*.blockmap' -printf '%f\n' \
+            | sort | xargs sha256sum > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          gh release upload "$TAG" SHA256SUMS.txt --repo "$REPO" --clobber

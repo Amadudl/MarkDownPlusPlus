@@ -130,9 +130,11 @@ Download the latest version from the
 | Linux (arm64)         | `.deb`                                              | `.AppImage` · `.tar.gz`                              |
 
 Portable builds can keep all settings in a `MarkDownPlusPlus-data` folder next to the
-application. Release builds may not be code-signed yet; see
-[docs/installation.md](docs/installation.md) for Gatekeeper and SmartScreen notes,
-uninstalling, and building from source.
+application. The downloads are built publicly by GitHub Actions and are not signed with
+paid certificates, so macOS and Windows ask for a one-time confirmation on first launch.
+Every file can be verified with the release's `SHA256SUMS.txt` or its build provenance
+attestation — see [docs/installation.md](docs/installation.md) for first-launch steps,
+verification, uninstalling and building from source.
 
 ## Quick start
 

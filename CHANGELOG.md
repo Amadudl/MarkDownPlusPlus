@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Every release now includes `SHA256SUMS.txt` and a free, keyless build provenance
+  attestation for each download (`gh attestation verify <file> --repo Amadudl/MarkDownPlusPlus`),
+  so anyone can check that a file was built by this repository's public release workflow.
+- `THIRD_PARTY_LICENSES.md` lists the licenses of all bundled open-source packages and
+  fonts; it ships inside the app together with `LICENSE` and Electron's and Chromium's
+  notices (also on macOS), and the About dialog links to it. `npm run licenses` regenerates
+  it, and a test fails on outdated notices or non-permissive licenses.
+
+### Changed
+
+- The project no longer plans paid code signing. The installation guide explains the
+  one-time Gatekeeper / SmartScreen confirmation and how to verify downloads; the theming
+  guide clarifies that theme names only describe the colour schemes they follow.
+
 ### Fixed
 
 - The release workflow creates the draft release once before packaging, so parallel

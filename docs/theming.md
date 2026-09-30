@@ -73,6 +73,14 @@ labels reach WCAG AA contrast.
 _inspired by_ the originals: colours are reproduced as faithfully as the shared token
 model allows.
 
+> [!NOTE]
+> Theme and product names such as Visual Studio Code, IntelliJ, Xcode, Eclipse,
+> Notepad++, Sublime Text, GitHub, Monokai, Dracula, Nord, Solarized, Gruvbox, Catppuccin,
+> Tokyo Night or Rosé Pine are used only to describe which colour scheme a preset follows.
+> They belong to their respective owners; MarkDown++ is not affiliated with or endorsed by
+> them. The presets are MarkDown++'s own data files — no theme files, code or assets of
+> those products are included.
+
 ![A TypeScript code block in the Monokai code theme with the Monokai UI theme and the Technical element style: window frame, line numbers and language picker](images/code-themes.png)
 
 | Name                  | Id                      | Kind  | Description                                                                                     |

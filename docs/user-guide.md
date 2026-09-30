@@ -458,8 +458,8 @@ The same folder holds `recent-files.json`, `session.json` and `window-state.json
 | A local image is not shown                            | Save the document first (relative paths are resolved against its folder) and check that the file has an image extension.             |
 | Remote images are not shown                           | Enable _Load remote images_ in the settings.                                                                                         |
 | The file looks different after editing in Visual mode | Visual mode normalises Markdown syntax; use Markdown mode for byte-exact edits (see [above](#how-switching-preserves-your-content)). |
-| macOS says the app cannot be opened                   | See [Gatekeeper](installation.md#gatekeeper-and-unsigned-builds).                                                                    |
-| Windows SmartScreen blocks the app                    | See [SmartScreen](installation.md#smartscreen-and-unsigned-builds).                                                                  |
+| macOS says the app cannot be opened                   | See [Gatekeeper](installation.md#first-launch-gatekeeper).                                                                           |
+| Windows SmartScreen blocks the app                    | See [SmartScreen](installation.md#first-launch-smartscreen).                                                                         |
 | Settings seem broken                                  | Use **Reset to defaults** in the Settings dialog, or quit MarkDown++ and delete `settings.json`.                                     |
 
 Still stuck? See [SUPPORT.md](../SUPPORT.md).
@@ -479,7 +479,9 @@ Still stuck? See [SUPPORT.md](../SUPPORT.md).
   nested repetition such as `(a+)+` and patterns that are too slow on the current
   document, but other patterns with heavy backtracking can still make searching a large
   document noticeably slow. Prefer simple patterns or turn off _Regular expression_.
-- **Unsigned builds trigger Gatekeeper and SmartScreen.** Release builds may not be
-  code-signed yet, so macOS Gatekeeper and Windows SmartScreen warn on first start. See
-  [Gatekeeper](installation.md#gatekeeper-and-unsigned-builds) and
-  [SmartScreen](installation.md#smartscreen-and-unsigned-builds) for how to open the app.
+- **Unsigned builds trigger Gatekeeper and SmartScreen.** Release builds are not signed
+  with paid certificates, so macOS Gatekeeper and Windows SmartScreen warn on first start
+  (downloads can be [verified](installation.md#unsigned-builds-and-verifying-a-download)
+  instead). See
+  [Gatekeeper](installation.md#first-launch-gatekeeper) and
+  [SmartScreen](installation.md#first-launch-smartscreen) for how to open the app.

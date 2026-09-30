@@ -101,6 +101,10 @@ test.describe('Command palette', () => {
     const about = window.getByRole('dialog', { name: 'About MarkDown++' });
     await expect(about).toBeVisible();
     await expect(about).toContainText(packageJson.version);
+    await about.getByRole('button', { name: 'Third-party licenses' }).click();
+    await expect
+      .poll(async () => (await mpp.stubs.calls('openExternal')).map((call) => call.detail))
+      .toContain('https://github.com/Amadudl/MarkDownPlusPlus/blob/main/THIRD_PARTY_LICENSES.md');
   });
 
   test('the shortcut toggles the palette closed again', async ({ mpp }) => {

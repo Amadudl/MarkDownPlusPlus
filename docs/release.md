@@ -52,7 +52,8 @@ sections _Added_, _Changed_, _Deprecated_, _Removed_, _Fixed_, _Security_.
      packaging jobs cannot each create their own draft and split the artifacts);
    - **package** — on macOS, Windows and Linux in parallel: `npm ci`, `npm run build` and
      `npx electron-builder --publish always`. electron-builder uploads all artifacts to the
-     draft release.
+     draft release, and each package gets a build provenance attestation;
+   - **checksums** — downloads all release files and attaches `SHA256SUMS.txt`.
 7. Open the draft release on GitHub, paste the changelog section as release notes, check
    that all artifacts are present (see the table below), download and smoke-test at least
    one build per OS, then **publish** the release.
@@ -70,10 +71,16 @@ afterwards that exactly one draft release holds all artifacts.
 
 ## Code signing and notarisation
 
-Signing is **optional**. The workflow only uses credentials whose repository secrets
-exist; without them, builds are produced unsigned (macOS builds are signed ad hoc so they
-run on Apple silicon). Users of unsigned builds see Gatekeeper / SmartScreen warnings,
-documented in [installation.md](installation.md).
+The official releases are **not** signed with commercial certificates: the project stays
+free of paid accounts. Trust comes from public builds instead — the workflow attaches a
+[build provenance attestation](https://docs.github.com/actions/security-for-github-actions/using-artifact-attestations)
+to every package and a `SHA256SUMS.txt` to every release (see
+[verifying a download](installation.md#unsigned-builds-and-verifying-a-download)); macOS
+builds are signed ad hoc so they run on Apple silicon. Users see Gatekeeper / SmartScreen
+warnings once, documented in [installation.md](installation.md).
+
+Signing remains **optional** for forks or future use: the workflow only uses credentials
+whose repository secrets exist.
 
 Configure the secrets under **Settings → Secrets and variables → Actions**:
 

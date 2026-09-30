@@ -5,6 +5,7 @@ MarkDown++ runs on **macOS** (Apple silicon and Intel), **Windows** (x64 and arm
 build for each platform. All files are attached to the
 [GitHub release](https://github.com/Amadudl/MarkDownPlusPlus/releases/latest).
 
+- [Unsigned builds and verifying a download](#unsigned-builds-and-verifying-a-download)
 - [Which file do I need?](#which-file-do-i-need)
 - [macOS](#macos)
 - [Windows](#windows)
@@ -13,6 +14,45 @@ build for each platform. All files are attached to the
 - [Where settings are stored](#where-settings-are-stored)
 - [Uninstalling](#uninstalling)
 - [Building from source](#building-from-source)
+
+## Unsigned builds and verifying a download
+
+MarkDown++ is free, open-source software, built entirely in public: every release file is
+produced by the [Release workflow](../.github/workflows/release.yml) on GitHub's servers
+from the tagged source code — nobody uploads binaries by hand. The project deliberately
+does **not** buy commercial code-signing certificates (Apple Developer Program, Windows
+code-signing CAs), so macOS and Windows show a one-time warning on first launch; how to
+confirm it is described per OS below. This is normal for community-built open-source apps
+and entirely legal.
+
+Instead of a paid certificate, every release gives you two free ways to check that a file
+is genuine and unmodified:
+
+1. **Checksums.** Each release has a `SHA256SUMS.txt`. Compare it with the checksum of
+   your download:
+
+   ```bash
+   # macOS / Linux, in the folder with the download and SHA256SUMS.txt
+   shasum -a 256 --ignore-missing -c SHA256SUMS.txt
+   ```
+
+   ```powershell
+   # Windows PowerShell: compare the output with the line in SHA256SUMS.txt
+   Get-FileHash .\MarkDownPlusPlus-<version>-win-x64-setup.exe -Algorithm SHA256
+   ```
+
+2. **Build provenance attestation** (recommended). GitHub records, with a keyless
+   [Sigstore](https://www.sigstore.dev/) signature, which workflow, repository and commit
+   built each file. With the [GitHub CLI](https://cli.github.com/):
+
+   ```bash
+   gh attestation verify MarkDownPlusPlus-<version>-mac-arm64.dmg --repo Amadudl/MarkDownPlusPlus
+   ```
+
+   A successful check proves the file was built by this repository's release workflow and
+   has not been changed since. Attestations exist for releases from 1.0.3 on.
+
+You can also [build MarkDown++ from source](#building-from-source) yourself.
 
 ## Which file do I need?
 
@@ -50,19 +90,27 @@ Unzip the archive and run `MarkDown++.app` from wherever you like (for example a
 drive). No installation is required. See
 [portable mode](#portable-mode-and-the-data-folder) for where settings are stored.
 
-### Gatekeeper and unsigned builds
+### First launch (Gatekeeper)
 
-Official releases are code-signed and notarised when signing credentials are configured
-for the release pipeline. If a build is **not** signed (for example a build you made
-yourself, or an early release), macOS shows _"MarkDown++ cannot be opened because Apple
-cannot check it for malicious software"_. To open it anyway:
+The macOS builds are not notarised by Apple (see
+[unsigned builds](#unsigned-builds-and-verifying-a-download)), so the first launch shows
+_"Apple could not verify "MarkDown++" is free of malware"_. To allow it once:
 
-1. Control-click (or right-click) **MarkDown++** in Finder and choose **Open**, then
-   confirm with **Open**; or
-2. open **System Settings → Privacy & Security**, scroll to the message about MarkDown++
-   and click **Open Anyway**.
+1. Try to open **MarkDown++** and close the warning with **Done**.
+2. Open **System Settings → Privacy & Security**, scroll down to the message about
+   MarkDown++ and click **Open Anyway**, then confirm with your password or Touch ID.
 
-You only need to do this once. Only do this for files downloaded from the official
+On macOS 14 and older, Control-click (or right-click) the app in Finder, choose **Open**
+and confirm with **Open** instead.
+
+Alternatively, after checking the download, remove the quarantine flag your browser added
+(this only affects this app):
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/MarkDown++.app"
+```
+
+Only do this for files from the official
 [releases page](https://github.com/Amadudl/MarkDownPlusPlus/releases).
 
 ## Windows
@@ -84,11 +132,14 @@ Run `MarkDownPlusPlus-<version>-win-<arch>-portable.exe` directly — nothing is
 The portable build always stores its data in a `MarkDownPlusPlus-data` folder next to
 the `.exe` (see [portable mode](#portable-mode-and-the-data-folder)).
 
-### SmartScreen and unsigned builds
+### First launch (SmartScreen)
 
-If a build is not code-signed, Microsoft Defender SmartScreen may show _"Windows
-protected your PC"_. Click **More info** and then **Run anyway**. Only do this for files
-downloaded from the official releases page.
+The Windows builds are not signed with a commercial certificate (see
+[unsigned builds](#unsigned-builds-and-verifying-a-download)), so Microsoft Defender
+SmartScreen may show _"Windows protected your PC"_ for the installer or the portable
+`.exe`. Click **More info** and then **Run anyway**. Your browser may also ask whether to
+keep the download — choose **Keep**. Only do this for files from the official releases
+page.
 
 ## Linux
 

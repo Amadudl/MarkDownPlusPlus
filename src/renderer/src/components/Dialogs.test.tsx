@@ -85,10 +85,12 @@ describe('AboutDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Source code' }));
     await user.click(screen.getByRole('button', { name: 'Report an issue' }));
     await user.click(screen.getByRole('button', { name: 'License' }));
+    await user.click(screen.getByRole('button', { name: 'Third-party licenses' }));
     expect(vi.mocked(api.app.openExternal).mock.calls.map(([url]) => url)).toEqual([
       PROJECT_LINKS.repository,
       PROJECT_LINKS.issues,
       PROJECT_LINKS.license,
+      PROJECT_LINKS.thirdPartyLicenses,
     ]);
     vi.mocked(api.app.openExternal).mockRejectedValueOnce(new Error('blocked'));
     await user.click(screen.getByRole('button', { name: 'Source code' }));

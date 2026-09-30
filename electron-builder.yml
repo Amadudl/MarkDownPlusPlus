@@ -23,6 +23,15 @@ files:
 
 asar: true
 
+# License notices required by the MIT License and the bundled dependencies (MIT, BSD, ISC,
+# Apache-2.0, SIL OFL for the fonts) travel with every copy of the app. Electron adds its
+# own LICENSE.electron.txt and LICENSES.chromium.html.
+extraResources:
+  - from: LICENSE
+    to: LICENSE.txt
+  - from: THIRD_PARTY_LICENSES.md
+    to: THIRD_PARTY_LICENSES.md
+
 # Electron fuses are flipped at package time and cannot be changed at runtime.
 # They remove attack surface that a desktop editor never needs.
 electronFuses:
@@ -49,6 +58,13 @@ fileAssociations:
 
 mac:
   category: public.app-category.productivity
+  # On Windows and Linux electron-builder places Electron's and Chromium's notices next to
+  # the executable; on macOS they would be missing from the bundle, so add them here.
+  extraResources:
+    - from: node_modules/electron/dist/LICENSE
+      to: LICENSE.electron.txt
+    - from: node_modules/electron/dist/LICENSES.chromium.html
+      to: LICENSES.chromium.html
   icon: build/icon.png
   target:
     - target: dmg

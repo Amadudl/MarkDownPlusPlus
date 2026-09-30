@@ -59,9 +59,13 @@ export function AboutContent(): JSX.Element {
         <button type="button" className="button" onClick={() => openLink(PROJECT_LINKS.license)}>
           <ExternalLink size={14} aria-hidden="true" /> License
         </button>
+        <button type="button" className="button" onClick={() => openLink(PROJECT_LINKS.thirdPartyLicenses)}>
+          <ExternalLink size={14} aria-hidden="true" /> Third-party licenses
+        </button>
       </div>
       <p className="about-license">
-        Free and open-source software under the MIT License — use, modify and share it freely.
+        Free and open-source software under the MIT License — use, modify and share it freely. It builds on
+        open-source packages whose licenses are included with the app.
       </p>
     </div>
   );
