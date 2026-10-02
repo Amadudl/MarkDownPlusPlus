@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.5] - 2026-10-02
+
 ### Added
 
 - **Export as Image (PNG)** in the File menu and the command palette
@@ -234,7 +236,8 @@ The first stable release.
   CodeQL, least-privilege workflows, signing credentials scoped to the packaging step,
   and release packaging without dependency lifecycle scripts.
 
-[Unreleased]: https://github.com/Amadudl/MarkDownPlusPlus/compare/v1.0.4...HEAD
+[Unreleased]: https://github.com/Amadudl/MarkDownPlusPlus/compare/v1.0.5...HEAD
+[1.0.5]: https://github.com/Amadudl/MarkDownPlusPlus/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/Amadudl/MarkDownPlusPlus/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/Amadudl/MarkDownPlusPlus/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/Amadudl/MarkDownPlusPlus/compare/v1.0.1...v1.0.2
