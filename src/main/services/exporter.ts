@@ -4,16 +4,19 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { BrowserWindow, session, type Session } from 'electron';
 import { fromMppFileUrl } from '../../shared/file-url';
-import type { ExportHtmlRequest, ExportPdfRequest } from '../../shared/types';
+import type { ExportHtmlRequest, ExportImageRequest, ExportPdfRequest } from '../../shared/types';
 import { showExportDialog } from '../dialogs';
 import { writeFileAtomic } from './atomicWrite';
+import { capturePageAsPng } from './imageCapture';
 import { readLocalImage, type LocalImagePolicy } from './localImages';
 
 /** Maximum wall-clock time of a PDF render. */
 export const PDF_TIMEOUT_MS = 30_000;
 /** Upper bound for the sum of all images embedded into one export (200 MB). */
 export const MAX_INLINED_IMAGE_BYTES = 200 * 1024 * 1024;
-/** Isolated in-memory session used for rendering PDFs. */
+/** Maximum wall-clock time of an image (PNG) render, including stitching long documents. */
+export const IMAGE_TIMEOUT_MS = 60_000;
+/** Isolated in-memory session used for rendering PDFs and images. */
 export const PDF_PARTITION = 'mpp-pdf-export';
 
 /**
@@ -138,9 +141,13 @@ function pdfSession(): Session {
   return ses;
 }
 
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  message = 'PDF export timed out',
+): Promise<T> {
   return new Promise<T>((resolvePromise, reject) => {
-    const timer = setTimeout(() => reject(new Error('PDF export timed out')), timeoutMs);
+    const timer = setTimeout(() => reject(new Error(message)), timeoutMs);
     promise.then(
       (value) => {
         clearTimeout(timer);
@@ -195,17 +202,19 @@ async function loadForPrinting(
 }
 
 /**
- * Renders a complete HTML document to an A4 PDF in a hidden, sandboxed window
- * with JavaScript disabled. The document is loaded from a temporary file which
- * is deleted afterwards. Subresources (remote images) get at most
- * `subresourceBudgetMs` after the document has been parsed; images still pending
- * then are left out instead of failing the export.
+ * Loads a complete HTML document from a temporary file into a hidden, sandboxed
+ * window with JavaScript disabled and an isolated session, runs `produce` on it and
+ * cleans everything up afterwards. Subresources (remote images) get at most
+ * `subresourceBudgetMs` after the document has been parsed.
  */
-export async function renderHtmlToPdf(
+async function renderInExportWindow<T>(
   html: string,
-  timeoutMs: number = PDF_TIMEOUT_MS,
-  subresourceBudgetMs: number = PDF_SUBRESOURCE_BUDGET_MS,
-): Promise<Buffer> {
+  width: number,
+  timeoutMs: number,
+  timeoutMessage: string,
+  subresourceBudgetMs: number,
+  produce: (window: BrowserWindow) => Promise<T>,
+): Promise<T> {
   const dir = await mkdtemp(join(tmpdir(), 'mpp-pdf-'));
   const file = join(dir, 'document.html');
   const fileUrl = pathToFileURL(file).href;
@@ -214,7 +223,7 @@ export async function renderHtmlToPdf(
     allowedPdfFiles.add(fileUrl);
     const exportWindow = new BrowserWindow({
       show: false,
-      width: 1024,
+      width,
       height: 1400,
       webPreferences: {
         javascript: false,
@@ -230,13 +239,10 @@ export async function renderHtmlToPdf(
       return await withTimeout(
         (async () => {
           await loadForPrinting(exportWindow, fileUrl, subresourceBudgetMs);
-          return exportWindow.webContents.printToPDF({
-            pageSize: 'A4',
-            printBackground: true,
-            margins: { top: 0.6, bottom: 0.6, left: 0.6, right: 0.6 },
-          });
+          return produce(exportWindow);
         })(),
         timeoutMs,
+        timeoutMessage,
       );
     } finally {
       if (!exportWindow.isDestroyed()) exportWindow.destroy();
@@ -247,7 +253,49 @@ export async function renderHtmlToPdf(
   }
 }
 
-/** Options of {@link exportHtml} and {@link exportPdf}. */
+/**
+ * Renders a complete HTML document to an A4 PDF in a hidden, sandboxed window
+ * with JavaScript disabled. The document is loaded from a temporary file which
+ * is deleted afterwards. Subresources (remote images) get at most
+ * `subresourceBudgetMs` after the document has been parsed; images still pending
+ * then are left out instead of failing the export.
+ */
+export function renderHtmlToPdf(
+  html: string,
+  timeoutMs: number = PDF_TIMEOUT_MS,
+  subresourceBudgetMs: number = PDF_SUBRESOURCE_BUDGET_MS,
+): Promise<Buffer> {
+  return renderInExportWindow(html, 1024, timeoutMs, 'PDF export timed out', subresourceBudgetMs, (window) =>
+    window.webContents.printToPDF({
+      pageSize: 'A4',
+      printBackground: true,
+      margins: { top: 0.6, bottom: 0.6, left: 0.6, right: 0.6 },
+    }),
+  );
+}
+
+/**
+ * Renders a complete HTML document to one PNG of the whole page, laid out at
+ * `width` CSS pixels, in the same locked-down window as {@link renderHtmlToPdf}
+ * (see `capturePageAsPng` for density, tiling and the size limit).
+ */
+export function renderHtmlToPng(
+  html: string,
+  width: number,
+  timeoutMs: number = IMAGE_TIMEOUT_MS,
+  subresourceBudgetMs: number = PDF_SUBRESOURCE_BUDGET_MS,
+): Promise<Buffer> {
+  return renderInExportWindow(
+    html,
+    width,
+    timeoutMs,
+    'Image export timed out',
+    subresourceBudgetMs,
+    (window) => capturePageAsPng(window.webContents.debugger, width),
+  );
+}
+
+/** Options of {@link exportHtml}, {@link exportPdf} and {@link exportImage}. */
 export interface ExportOptions {
   /** Folder the save dialog starts in (the document's folder); defaults to Documents. */
   readonly directory?: string | null;
@@ -277,5 +325,21 @@ export async function exportPdf(
   if (target === null) return null;
   const pdf = await renderHtmlToPdf(await inlineLocalImages(request.html, options.imagePolicy));
   await writeFileAtomic(target, pdf);
+  return target;
+}
+
+/** Exports a sanitised HTML document as a PNG image to a user-chosen file; returns its path or `null`. */
+export async function exportImage(
+  parent: BrowserWindow | null,
+  request: ExportImageRequest,
+  options: ExportOptions = {},
+): Promise<string | null> {
+  const target = await showExportDialog(parent, request.suggestedName, 'png', options.directory ?? null);
+  if (target === null) return null;
+  const png = await renderHtmlToPng(
+    await inlineLocalImages(request.html, options.imagePolicy),
+    request.width,
+  );
+  await writeFileAtomic(target, png);
   return target;
 }

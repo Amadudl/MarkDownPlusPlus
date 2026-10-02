@@ -9,7 +9,7 @@ import type { AppInfo, FileReadResult, SessionState } from '../shared/types';
 import { confirmReload, confirmUnsaved, showOpenMarkdownDialog, showSaveMarkdownDialog } from './dialogs';
 import { IpcValidationError, toIpcFailure } from './ipcErrors';
 import { isAppUrl, safeExternalUrl } from './security';
-import { exportHtml, exportPdf } from './services/exporter';
+import { exportHtml, exportImage, exportPdf } from './services/exporter';
 import { isMarkdownPath, type FileService } from './services/fileService';
 import type { FileWatcher } from './services/fileWatcher';
 import type { PathRegistry } from './services/pathRegistry';
@@ -19,6 +19,7 @@ import type { SettingsStore } from './services/settingsStore';
 import {
   absolutePathSchema,
   describeZodError,
+  exportImageRequestSchema,
   exportRequestSchema,
   fileSaveRequestSchema,
   labelSchema,
@@ -78,6 +79,7 @@ export const ipcArgumentSchemas = {
   [IpcChannel.FileSaveAsDialog]: z.tuple([saveAsRequestSchema]),
   [IpcChannel.FileExportHtml]: z.tuple([exportRequestSchema]),
   [IpcChannel.FileExportPdf]: z.tuple([exportRequestSchema]),
+  [IpcChannel.FileExportImage]: z.tuple([exportImageRequestSchema]),
   [IpcChannel.FileWatch]: pathArg,
   [IpcChannel.FileUnwatch]: pathArg,
   [IpcChannel.FileRevealInFolder]: pathArg,
@@ -241,6 +243,9 @@ export function registerIpcHandlers(deps: IpcDependencies): void {
   );
   handle(IpcChannel.FileExportPdf, ({ parent }, request) =>
     exportPdf(parent, request, exportOptions(request.documentPath)),
+  );
+  handle(IpcChannel.FileExportImage, ({ parent }, request) =>
+    exportImage(parent, request, exportOptions(request.documentPath)),
   );
   handle(IpcChannel.FileWatch, ({ event }, path) => {
     requireGranted(deps.registry, path);

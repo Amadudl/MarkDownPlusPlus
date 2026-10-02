@@ -18,7 +18,7 @@ This is the complete manual for MarkDown++ 1.0. If you are new, start with the
 - [Outline](#outline)
 - [Focus mode and zoom](#focus-mode-and-zoom)
 - [Command palette](#command-palette)
-- [Export to HTML and PDF](#export-to-html-and-pdf)
+- [Export to HTML, PDF and image](#export-to-html-pdf-and-image)
 - [Saving, autosave and session restore](#saving-autosave-and-session-restore)
 - [Files changed by other programs](#files-changed-by-other-programs)
 - [Settings reference](#settings-reference)
@@ -331,10 +331,11 @@ PDF…_), use the arrow keys to select and `Enter` to run.
 
 ![The command palette filtered by "mode", listing Toggle Focus Mode, Switch to Visual Mode, Switch to Markdown Mode and Toggle Visual / Markdown Mode with their shortcuts](images/command-palette.png)
 
-## Export to HTML and PDF
+## Export to HTML, PDF and image
 
-**File → Export as HTML…** and **File → Export as PDF…** (`⌘⇧E` / `Ctrl+Shift+E`) export
-the active document with the active themes, so the result looks like the editor.
+**File → Export as HTML…**, **File → Export as PDF…** (`⌘⇧E` / `Ctrl+Shift+E`) and
+**File → Export as Image (PNG)…** export the active document with the active themes, so
+the result looks like the editor. All three are also in the command palette.
 
 - **HTML** export creates a single, self-contained `.html` file with the styles, syntax
   highlighting and KaTeX math embedded. The HTML is sanitised: scripts, event handlers
@@ -343,6 +344,12 @@ the active document with the active themes, so the result looks like the editor.
   prints it to PDF.
   Remote images get up to 10 seconds to load; images that have not arrived by then
   (for example from an unreachable server) are left out instead of failing the export.
+- **Image** export renders the same page into one PNG of the whole document, as wide as
+  the element style's content column (plus the page margins). It is rendered at twice the
+  resolution so it stays sharp on high-resolution screens; documents taller than about
+  16 000 px are rendered at normal resolution instead. A document taller than 32 768 px
+  cannot be exported as a single image — export it as PDF instead. Remote images follow
+  the same 10-second rule as the PDF export.
 
 Local images are embedded so the export also works on other computers.
 

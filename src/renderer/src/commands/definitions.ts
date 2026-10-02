@@ -65,6 +65,7 @@ const SPECS: Readonly<Record<CommandIdValue, Spec>> = {
   }),
   [CommandId.FileExportHtml]: file('Export as HTML…', () => exportActiveDocument('html')),
   [CommandId.FileExportPdf]: file('Export as PDF…', () => exportActiveDocument('pdf')),
+  [CommandId.FileExportImage]: file('Export as Image (PNG)…', () => exportActiveDocument('png')),
   [CommandId.FileRevealInFolder]: file('Reveal in File Manager', revealActiveDocument),
   [CommandId.FileOpenRecent]: file(
     'Open Recent File',

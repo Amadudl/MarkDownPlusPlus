@@ -11,6 +11,7 @@ export const IpcChannel = {
   FileSaveAsDialog: 'file:save-as-dialog',
   FileExportHtml: 'file:export-html',
   FileExportPdf: 'file:export-pdf',
+  FileExportImage: 'file:export-image',
   FileWatch: 'file:watch',
   FileUnwatch: 'file:unwatch',
   FileRevealInFolder: 'file:reveal',

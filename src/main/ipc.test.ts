@@ -25,7 +25,7 @@ const mocks = vi.hoisted(() => ({
     showOpenMarkdownDialog: vi.fn(),
     showSaveMarkdownDialog: vi.fn(),
   },
-  exporter: { exportHtml: vi.fn(), exportPdf: vi.fn() },
+  exporter: { exportHtml: vi.fn(), exportPdf: vi.fn(), exportImage: vi.fn() },
   windows: new Map<number, unknown>(),
 }));
 
@@ -318,6 +318,23 @@ describe('registerIpcHandlers', () => {
         request,
         expect.objectContaining({ directory: null }),
       );
+      mocks.exporter.exportImage.mockResolvedValue('/out.png');
+      const image = { ...request, width: 892 };
+      expect(await invoke(IpcChannel.FileExportImage, image)).toBe('/out.png');
+      expect(mocks.exporter.exportImage).toHaveBeenCalledWith(
+        window.browserWindow,
+        image,
+        expect.objectContaining({ directory: null }),
+      );
+    });
+
+    it('rejects image exports without a sane page width', async () => {
+      const { invoke } = setup();
+      const request = { suggestedName: 'Doc', html: '<p/>' };
+      for (const width of [undefined, 0, 319, 4001, 892.5, '892']) {
+        await expect(invoke(IpcChannel.FileExportImage, { ...request, width })).rejects.toThrow();
+      }
+      expect(mocks.exporter.exportImage).not.toHaveBeenCalled();
     });
 
     it('exports next to a granted document and embeds network images only from its server', async () => {

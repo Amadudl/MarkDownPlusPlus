@@ -52,6 +52,7 @@ export function createMppApi(ipc: IpcRendererLike, webUtils: WebUtilsLike): MppA
       saveAs: (request) => invoke(IpcChannel.FileSaveAsDialog, request),
       exportHtml: (request) => invoke(IpcChannel.FileExportHtml, request),
       exportPdf: (request) => invoke(IpcChannel.FileExportPdf, request),
+      exportImage: (request) => invoke(IpcChannel.FileExportImage, request),
       watch: (path) => invoke(IpcChannel.FileWatch, path),
       unwatch: (path) => invoke(IpcChannel.FileUnwatch, path),
       revealInFolder: (path) => invoke(IpcChannel.FileRevealInFolder, path),

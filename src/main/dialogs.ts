@@ -11,11 +11,18 @@ const TEXT_FILTER: FileFilter = { name: 'Text', extensions: ['txt'] };
 const ALL_FILES_FILTER: FileFilter = { name: 'All Files', extensions: ['*'] };
 
 /** Export target formats offered by {@link showExportDialog}. */
-export type ExportFormat = 'html' | 'pdf';
+export type ExportFormat = 'html' | 'pdf' | 'png';
+
+const EXPORT_TITLES: Record<ExportFormat, string> = {
+  html: 'Export as HTML',
+  pdf: 'Export as PDF',
+  png: 'Export as Image',
+};
 
 const EXPORT_FILTERS: Record<ExportFormat, FileFilter> = {
   html: { name: 'HTML Document', extensions: ['html', 'htm'] },
   pdf: { name: 'PDF Document', extensions: ['pdf'] },
+  png: { name: 'PNG Image', extensions: ['png'] },
 };
 
 /**
@@ -87,7 +94,7 @@ export async function showExportDialog(
   const stem = suggestedName.replace(/\.(md|markdown|mdown|mkdn?|mdwn|mdx|txt)$/i, '');
   const accepted = filter.extensions.map((ext) => `.${ext}`);
   const options: Electron.SaveDialogOptions = {
-    title: format === 'html' ? 'Export as HTML' : 'Export as PDF',
+    title: EXPORT_TITLES[format],
     defaultPath: join(startDirectory(directory), sanitizeFileName(stem, `.${format}`, accepted)),
     filters: [filter],
     properties: ['createDirectory', 'showOverwriteConfirmation'],

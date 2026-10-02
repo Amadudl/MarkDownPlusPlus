@@ -101,8 +101,8 @@ arbitrary files** (a document can only _display_ local image files, see
   placeholder, and, as a second layer, by the main process, which cancels every remote
   image request of the app session while the setting is off (`src/main/remoteImages.ts`).
 - **Raw HTML inside Markdown is never executed.** Exported HTML is sanitised with
-  DOMPurify; the PDF exporter renders in a hidden, sandboxed window with JavaScript
-  disabled.
+  DOMPurify; the PDF and image exporters render in a hidden, sandboxed window with
+  JavaScript disabled.
 - Local images are served through the `mpp-file:` protocol, which only serves regular
   files with an image extension (`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`,
   `.avif`, `.bmp`, `.ico`) of at most 50 MB. A document cannot make the app read local

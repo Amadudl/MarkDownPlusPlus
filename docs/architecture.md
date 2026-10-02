@@ -19,7 +19,7 @@ contract.
 │ src/renderer  React 19 shell · zustand stores · command registry           │
 │               editors (Milkdown Crepe = WYSIWYG, CodeMirror 6 = source)    │
 │               theme engine (UI schemes, code themes, element styles)       │
-│               HTML/PDF export pipeline                                     │
+│               HTML/PDF/PNG export pipeline                                 │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -65,8 +65,10 @@ contract.
   BOM/EOL detection; refuses write-protected targets; atomic write via temp file +
   rename, falling back to an in-place write for hard-linked or foreign-owned files, folders
   without create permission and — after retrying — locked files on Windows), `settingsStore`, `recentFiles`, `sessionStore`,
-  `fileWatcher`, `exporter` (PDF via `printToPDF` in a hidden (`show: false`), sandboxed,
-  JavaScript-disabled `BrowserWindow` on a locked-down session).
+  `fileWatcher`, `exporter` (PDF via `printToPDF` and PNG via `imageCapture` — DevTools
+  protocol screenshots in tiles of at most 8192 device pixels, stitched losslessly — both
+  in a hidden (`show: false`), sandboxed, JavaScript-disabled `BrowserWindow` on a
+  locked-down session).
 - `menu.ts` — native application menu; every item sends a `CommandId` to the renderer.
 - `keyboard.ts` — deterministic shortcut routing: every key press of an app window is
   matched against the platform's shortcut table (`shortcutsFor(platform)`, i.e.
@@ -100,7 +102,7 @@ event subscriptions so listeners never receive the raw `IpcRendererEvent`.
 | `commands/`   | Command registry and definitions (`CommandId` → handler, label, shortcut label), document, view and session actions, autosave, file watching, window sync and the fuzzy search of the palette. Key presses are matched in the main process (`src/main/keyboard.ts`), not here. |
 | `editor/`     | `EditorAdapter` contract (`types.ts`), Crepe adapter, CodeMirror adapter, search, `EditorHost` React component.                                                                                                                                                                |
 | `themes/`     | Built-in presets, theme resolution, CSS variable application, CodeMirror theme.                                                                                                                                                                                                |
-| `export/`     | Markdown → sanitised, self-contained HTML (used for HTML and PDF export).                                                                                                                                                                                                      |
+| `export/`     | Markdown → sanitised, self-contained HTML (used for HTML, PDF and PNG export).                                                                                                                                                                                                 |
 | `components/` | React UI: app shell, title bar with the tabs and the Visual/Markdown switch, toolbar, status bar, settings, command palette, outline, find bar, dialogs.                                                                                                                       |
 | `styles/`     | Global styles, design tokens, element-style variants.                                                                                                                                                                                                                          |
 

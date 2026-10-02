@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Export as Image (PNG)** in the File menu and the command palette
+  ([#3](https://github.com/Amadudl/MarkDownPlusPlus/issues/3)): one sharp PNG of the whole
+  document, styled exactly like the HTML/PDF export. Long documents are captured in tiles
+  and stitched losslessly; documents taller than 32 768 px ask for a PDF export instead.
+
+### Fixed
+
+- A flaky end-to-end test of the custom theme editor read the theme attribute before the
+  theme was applied.
+
 ## [1.0.4] - 2026-10-02
 
 ### Fixed

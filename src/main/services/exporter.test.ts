@@ -49,6 +49,7 @@ vi.mock('electron', async () => {
     private abortLoad: (() => void) | null = null;
     readonly webContents = {
       printToPDF: vi.fn(() => Promise.resolve(Buffer.from('%PDF-1.7 fake'))),
+      debugger: { kind: 'fake-debugger' },
       once: (event: string, listener: () => void): void => {
         if (event !== 'dom-ready') return;
         const wrapped = (): void => {
@@ -142,16 +143,25 @@ vi.mock('electron', async () => {
   return { BrowserWindow, session: { fromPartition: state.fromPartition } };
 });
 vi.mock('../dialogs', () => ({ showExportDialog: state.showExportDialog }));
+const capture = vi.hoisted(() => ({
+  capturePageAsPng: vi.fn<(target: unknown, width: number) => Promise<Buffer>>(() =>
+    Promise.resolve(Buffer.from('PNG fake')),
+  ),
+}));
+vi.mock('./imageCapture', () => capture);
 
 const {
   decodeAttribute,
   exportHtml,
+  exportImage,
   exportPdf,
+  IMAGE_TIMEOUT_MS,
   inlineLocalImages,
   PDF_PARTITION,
   PDF_SUBRESOURCE_BUDGET_MS,
   PDF_TIMEOUT_MS,
   renderHtmlToPdf,
+  renderHtmlToPng,
 } = await import('./exporter');
 
 let dir: string;
@@ -161,6 +171,7 @@ beforeEach(async () => {
   state.windows.length = 0;
   state.loadBehaviour = 'ok';
   state.showExportDialog.mockReset();
+  capture.capturePageAsPng.mockClear();
 });
 
 afterEach(async () => {
@@ -353,7 +364,37 @@ describe('renderHtmlToPdf', () => {
   });
 });
 
-describe('exportHtml / exportPdf', () => {
+describe('renderHtmlToPng', () => {
+  it('captures the page laid out at the requested width in the locked-down window', async () => {
+    const png = await renderHtmlToPng('<h1>Picture</h1>', 892);
+    expect(png.toString()).toBe('PNG fake');
+    const [record] = state.windows;
+    expect(record?.options).toMatchObject({
+      show: false,
+      width: 892,
+      webPreferences: { javascript: false, sandbox: true, contextIsolation: true, nodeIntegration: false },
+    });
+    expect(record?.htmlAtLoad).toBe('<h1>Picture</h1>');
+    expect(capture.capturePageAsPng).toHaveBeenCalledWith({ kind: 'fake-debugger' }, 892);
+    expect(record?.destroyed).toBe(true);
+    expect(existsSync(fileURLToPath(record?.loadedUrl ?? ''))).toBe(false);
+  });
+
+  it('times out with its own message and cleans up', async () => {
+    expect(IMAGE_TIMEOUT_MS).toBeGreaterThan(PDF_TIMEOUT_MS);
+    state.loadBehaviour = 'hang';
+    await expect(renderHtmlToPng('<p>slow</p>', 892, 20)).rejects.toThrow('Image export timed out');
+    expect(state.windows.at(-1)?.destroyed).toBe(true);
+  });
+
+  it('propagates capture failures (e.g. a document too long for one image)', async () => {
+    capture.capturePageAsPng.mockRejectedValueOnce(new Error('too long'));
+    await expect(renderHtmlToPng('<p>long</p>', 892)).rejects.toThrow('too long');
+    expect(state.windows.at(-1)?.destroyed).toBe(true);
+  });
+});
+
+describe('exportHtml / exportPdf / exportImage', () => {
   it('returns null when the dialog is cancelled', async () => {
     state.showExportDialog.mockResolvedValue(null);
     expect(await exportHtml(null, { suggestedName: 'a.md', html: '<p/>' })).toBeNull();
@@ -394,5 +435,26 @@ describe('exportHtml / exportPdf', () => {
     state.showExportDialog.mockResolvedValue(target);
     expect(await exportPdf(null, { suggestedName: 'Doc', html: '<p>pdf</p>' })).toBe(target);
     expect(await readFile(target, 'utf8')).toBe('%PDF-1.7 fake');
+  });
+
+  it('writes the rendered PNG with local images inlined', async () => {
+    const pixel = join(dir, 'p.png');
+    await writeFile(pixel, Buffer.from([9]));
+    const target = join(dir, 'out.png');
+    state.showExportDialog.mockResolvedValue(target);
+    const html = `<img src="${toMppFileUrl(pixel)}">`;
+    expect(await exportImage(null, { suggestedName: 'Doc', html, width: 892 }, { directory: '/work' })).toBe(
+      target,
+    );
+    expect(state.showExportDialog).toHaveBeenCalledWith(null, 'Doc', 'png', '/work');
+    expect(await readFile(target, 'utf8')).toBe('PNG fake');
+    expect(state.windows.at(-1)?.htmlAtLoad).toBe('<img src="data:image/png;base64,CQ==">');
+  });
+
+  it('returns null when the image export dialog is cancelled', async () => {
+    state.showExportDialog.mockResolvedValue(null);
+    expect(await exportImage(null, { suggestedName: 'a.md', html: '<p/>', width: 892 })).toBeNull();
+    expect(state.showExportDialog).toHaveBeenCalledWith(null, 'a.md', 'png', null);
+    expect(capture.capturePageAsPng).not.toHaveBeenCalled();
   });
 });

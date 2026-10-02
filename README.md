@@ -89,7 +89,7 @@ Your files stay plain `.md` files that work everywhere.
   are refused instead of freezing the window.
 - **Outline** sidebar of your headings, **focus mode**, zoom.
 - **Command palette** (`⌘⇧P` / `Ctrl+Shift+P`) for every command and recent files.
-- **Export** to a self-contained **HTML** page or a **PDF** that looks exactly like the editor.
+- **Export** to a self-contained **HTML** page, a **PDF** or a sharp **PNG image** that looks exactly like the editor.
 - **Autosave** (after a delay or when the window loses focus), **session restore** and
   **external change detection** with reload prompts.
 - Line endings and UTF-8 byte-order marks are preserved on save; writes are atomic.

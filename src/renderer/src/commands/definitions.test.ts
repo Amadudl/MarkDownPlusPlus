@@ -64,8 +64,10 @@ describe('command definitions', () => {
     await executeCommand(CommandId.FileSaveAll);
     await executeCommand(CommandId.FileExportHtml);
     await executeCommand(CommandId.FileExportPdf);
+    await executeCommand(CommandId.FileExportImage);
     expect(api.file.exportHtml).toHaveBeenCalled();
     expect(api.file.exportPdf).toHaveBeenCalled();
+    expect(api.file.exportImage).toHaveBeenCalled();
     await executeCommand(CommandId.FileRevealInFolder);
     expect(api.file.revealInFolder).toHaveBeenCalledWith('/c.md');
     await executeCommand(CommandId.FileClose);

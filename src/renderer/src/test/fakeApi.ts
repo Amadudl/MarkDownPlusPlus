@@ -4,6 +4,7 @@ import { applySettingsPatch, DEFAULT_SETTINGS, type Settings, type SettingsPatch
 import type {
   AppInfo,
   ExportHtmlRequest,
+  ExportImageRequest,
   ExportPdfRequest,
   FileSaveRequest,
   SaveAsRequest,
@@ -138,6 +139,9 @@ export function createFakeApi(files: readonly FileReadResult[] = []): FakeApi {
       }),
       exportHtml: vi.fn((request: ExportHtmlRequest) => Promise.resolve(`/exports/${request.suggestedName}`)),
       exportPdf: vi.fn((request: ExportPdfRequest) => Promise.resolve(`/exports/${request.suggestedName}`)),
+      exportImage: vi.fn((request: ExportImageRequest) =>
+        Promise.resolve(`/exports/${request.suggestedName}`),
+      ),
       watch: vi.fn(() => Promise.resolve()),
       unwatch: vi.fn(() => Promise.resolve()),
       revealInFolder: vi.fn(() => Promise.resolve()),

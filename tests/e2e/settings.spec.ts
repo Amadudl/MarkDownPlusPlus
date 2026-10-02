@@ -91,8 +91,8 @@ test.describe('Settings and themes', () => {
     await expect(
       dialog.getByRole('button', { name: /^Midnight Copy \(dark\), Custom, Active/ }),
     ).toBeVisible();
-    const customId = await html.getAttribute('data-mpp-ui-theme');
-    expect(customId).not.toBe('midnight');
+    // The theme is applied to the document one render after the gallery updates: wait for it.
+    await expect(html).toHaveAttribute('data-mpp-ui-theme', /^custom-/);
     const background = dialog.getByLabel('Background', { exact: true });
     await expect(background).toHaveValue('#0e1016');
     await background.fill('#123456');

@@ -1,5 +1,6 @@
 import { isAbsolute } from 'node:path';
 import { z } from 'zod';
+import { EXPORT_IMAGE_WIDTH_RANGE } from '../shared/types';
 
 /** Longest path accepted over IPC (the Windows extended-length limit). */
 export const MAX_PATH_LENGTH = 32_767;
@@ -41,6 +42,10 @@ export const exportRequestSchema = z.object({
   suggestedName: labelSchema,
   documentPath: absolutePathSchema.nullish(),
   html: z.string().max(MAX_HTML_LENGTH),
+});
+
+export const exportImageRequestSchema = exportRequestSchema.extend({
+  width: z.number().int().min(EXPORT_IMAGE_WIDTH_RANGE.min).max(EXPORT_IMAGE_WIDTH_RANGE.max),
 });
 
 export const sessionStateSchema = z.object({

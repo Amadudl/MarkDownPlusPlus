@@ -5,12 +5,15 @@ import { resetApp, setSettings } from '@renderer/test/utils';
 import { setAdapter } from '@renderer/store/adapters';
 import { isDirty, selectActiveDocument, useDocuments } from '@renderer/store/documents';
 import { useUi } from '@renderer/store/ui';
+import { EXPORT_IMAGE_WIDTH_RANGE } from '@shared/types';
 import {
   closeAllDocuments,
   closeDocument,
   createNewDocument,
   defaultMode,
   exportActiveDocument,
+  exportImageWidth,
+  EXPORT_PAGE_PADDING_PX,
   flushEditor,
   newDocumentLineEnding,
   openFiles,
@@ -322,6 +325,28 @@ describe('document actions', () => {
     vi.mocked(api.file.exportHtml).mockRejectedValueOnce(new Error('write failed'));
     await exportActiveDocument('html');
     expect(lastToast()).toBe('Could not export HTML.');
+  });
+
+  it('exports a PNG image laid out at the theme content width plus the page padding', async () => {
+    await openPath('/docs/a.md');
+    await exportActiveDocument('png');
+    expect(api.file.exportImage).toHaveBeenCalledWith({
+      suggestedName: 'a.png',
+      documentPath: '/docs/a.md',
+      html: '<html>a</html>',
+      width: exportImageWidth(780),
+    });
+    expect(lastToast()).toBe('Exported to /exports/a.png');
+    vi.mocked(api.file.exportImage).mockRejectedValueOnce(new Error('The document is too long'));
+    await exportActiveDocument('png');
+    expect(lastToast()).toBe('Could not export image.');
+  });
+
+  it('keeps the image width within the accepted range', () => {
+    expect(exportImageWidth(780)).toBe(780 + EXPORT_PAGE_PADDING_PX);
+    expect(exportImageWidth(779.6)).toBe(780 + EXPORT_PAGE_PADDING_PX);
+    expect(exportImageWidth(10)).toBe(EXPORT_IMAGE_WIDTH_RANGE.min);
+    expect(exportImageWidth(99_999)).toBe(EXPORT_IMAGE_WIDTH_RANGE.max);
   });
 
   it('passes theme and remote image settings to the exporter', async () => {

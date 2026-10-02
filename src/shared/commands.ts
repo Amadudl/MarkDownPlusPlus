@@ -13,6 +13,7 @@ export const CommandId = {
   FileCloseAll: 'file.closeAll',
   FileExportHtml: 'file.exportHtml',
   FileExportPdf: 'file.exportPdf',
+  FileExportImage: 'file.exportImage',
   FileRevealInFolder: 'file.reveal',
   FileOpenRecent: 'file.openRecent',
   FileClearRecent: 'file.clearRecent',

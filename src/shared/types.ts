@@ -56,6 +56,22 @@ export interface ExportPdfRequest {
   readonly html: string;
 }
 
+/** Smallest and largest page width (CSS pixels) of an exported image. */
+export const EXPORT_IMAGE_WIDTH_RANGE = { min: 320, max: 4000 } as const;
+
+export interface ExportImageRequest {
+  readonly suggestedName: string;
+  /** Path of the exported document, if saved; the dialog then starts in its folder. */
+  readonly documentPath?: string | null;
+  /** Complete, self-contained, already sanitised HTML document to render. */
+  readonly html: string;
+  /**
+   * Page width in CSS pixels (the theme's content width plus the export page padding),
+   * within {@link EXPORT_IMAGE_WIDTH_RANGE}. The image is rendered at 2× this width.
+   */
+  readonly width: number;
+}
+
 export interface RecentFile {
   readonly path: string;
   readonly openedAt: number;
@@ -116,6 +132,8 @@ export interface MppApi {
     saveAs(request: SaveAsRequest): Promise<FileSaveResult | null>;
     exportHtml(request: ExportHtmlRequest): Promise<string | null>;
     exportPdf(request: ExportPdfRequest): Promise<string | null>;
+    /** Exports the document as one PNG image of the whole page; returns the path or `null`. */
+    exportImage(request: ExportImageRequest): Promise<string | null>;
     watch(path: string): Promise<void>;
     unwatch(path: string): Promise<void>;
     revealInFolder(path: string): Promise<void>;

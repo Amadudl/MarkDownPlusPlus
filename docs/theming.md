@@ -10,7 +10,7 @@ exported and imported as JSON.
 | **Code theme**    | Syntax colours of fenced code blocks in Visual mode, of the whole Markdown mode editor and of exported code.                                                                               | `rendering.codeTheme`                                                     |
 | **Element style** | Typography and the _shape_ of every rendered Markdown element: headings, quotes, code blocks, inline code, tables, lists, links, horizontal rules and images.                              | `rendering.elementStyle`                                                  |
 
-The same layers are applied to Visual mode and to [HTML/PDF export](user-guide.md#export-to-html-and-pdf),
+The same layers are applied to Visual mode and to [HTML, PDF and image export](user-guide.md#export-to-html-pdf-and-image),
 so an export looks exactly like the editor.
 
 - [Choosing themes](#choosing-themes)

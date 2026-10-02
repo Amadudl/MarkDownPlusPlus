@@ -50,6 +50,11 @@ describe('createMppApi', () => {
       [api.file.saveAs(saveAs), IpcChannel.FileSaveAsDialog, saveAs],
       [api.file.exportHtml(exported), IpcChannel.FileExportHtml, exported],
       [api.file.exportPdf(exported), IpcChannel.FileExportPdf, exported],
+      [
+        api.file.exportImage({ ...exported, width: 892 }),
+        IpcChannel.FileExportImage,
+        { ...exported, width: 892 },
+      ],
       [api.file.watch('/a.md'), IpcChannel.FileWatch, '/a.md'],
       [api.file.unwatch('/a.md'), IpcChannel.FileUnwatch, '/a.md'],
       [api.file.revealInFolder('/a.md'), IpcChannel.FileRevealInFolder, '/a.md'],

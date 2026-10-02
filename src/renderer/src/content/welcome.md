@@ -145,7 +145,7 @@ The **command palette** gives you every command and your recent files in one sea
 - **Outline** — a table of contents of your headings; click one to jump there.
 - **Focus mode** — hides everything except your text.
 - **Drag & drop** — drop `.md` files onto the window to open them.
-- **Export** — save a document as a self-contained HTML page or a PDF that looks exactly like the editor.
+- **Export** — save a document as a self-contained HTML page, a PDF or a PNG image that looks exactly like the editor.
 - **Safe with your files** — line endings and byte-order marks are preserved, files changed by other programs are detected, and MarkDown++ asks before closing unsaved work.
 - **Front matter** — a YAML block at the top of a file (`---` … `---`) is kept exactly as written; Visual mode shows it read-only above the document, and you edit it in Markdown mode.
 

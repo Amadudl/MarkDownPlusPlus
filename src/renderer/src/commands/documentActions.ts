@@ -1,4 +1,10 @@
-import type { EditorMode, FileReadResult, LineEnding, UnsavedChoice } from '@shared/types';
+import {
+  EXPORT_IMAGE_WIDTH_RANGE,
+  type EditorMode,
+  type FileReadResult,
+  type LineEnding,
+  type UnsavedChoice,
+} from '@shared/types';
 import { buildStandaloneHtml } from '@renderer/export';
 import { getApi } from '@renderer/platform/api';
 import { stripExtension } from '@renderer/platform/paths';
@@ -228,8 +234,22 @@ export async function closeAllDocuments(): Promise<boolean> {
   return true;
 }
 
-/** Exports the active document as a standalone HTML file or a PDF. */
-export async function exportActiveDocument(format: 'html' | 'pdf'): Promise<void> {
+/** Horizontal padding of the export page around the content column (see the themes' `export.css`). */
+export const EXPORT_PAGE_PADDING_PX = 112;
+
+/** Export formats of {@link exportActiveDocument}. */
+export type ExportFormat = 'html' | 'pdf' | 'png';
+
+const EXPORT_LABELS: Record<ExportFormat, string> = { html: 'HTML', pdf: 'PDF', png: 'image' };
+
+/** Page width of an image export: the theme's content column plus the page padding. */
+export function exportImageWidth(contentWidth: number): number {
+  const width = Math.round(contentWidth) + EXPORT_PAGE_PADDING_PX;
+  return Math.min(EXPORT_IMAGE_WIDTH_RANGE.max, Math.max(EXPORT_IMAGE_WIDTH_RANGE.min, width));
+}
+
+/** Exports the active document as a standalone HTML file, a PDF or a PNG image. */
+export async function exportActiveDocument(format: ExportFormat): Promise<void> {
   const { activeId } = useDocuments.getState();
   const doc = activeId === null ? undefined : flushEditor(activeId);
   if (doc === undefined) {
@@ -238,23 +258,28 @@ export async function exportActiveDocument(format: 'html' | 'pdf'): Promise<void
   }
   const { settings } = useSettings.getState();
   const baseName = stripExtension(doc.title);
+  const theme = resolveTheme(settings, useUi.getState().prefersDark);
   try {
     const html = await buildStandaloneHtml({
       title: baseName,
       markdown: doc.content,
       documentPath: doc.path,
-      theme: resolveTheme(settings, useUi.getState().prefersDark),
+      theme,
       loadRemoteImages: settings.rendering.loadRemoteImages,
     });
     const api = getApi().file;
-    const target =
-      format === 'html'
-        ? await api.exportHtml({ suggestedName: `${baseName}.html`, documentPath: doc.path, html })
-        : await api.exportPdf({ suggestedName: `${baseName}.pdf`, documentPath: doc.path, html });
+    const request = { suggestedName: `${baseName}.${format}`, documentPath: doc.path, html };
+    let target: string | null;
+    if (format === 'html') target = await api.exportHtml(request);
+    else if (format === 'pdf') target = await api.exportPdf(request);
+    else {
+      const width = exportImageWidth(theme.elements.typography.contentWidth);
+      target = await api.exportImage({ ...request, width });
+    }
     if (target === null) return;
     useUi.getState().pushToast('success', `Exported to ${target}`);
   } catch (error) {
-    toastError(`Could not export ${format.toUpperCase()}.`, error);
+    toastError(`Could not export ${EXPORT_LABELS[format]}.`, error);
   }
 }
 

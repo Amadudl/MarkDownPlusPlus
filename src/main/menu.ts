@@ -88,6 +88,7 @@ export function buildMenuTemplate(context: MenuContext): Item[] {
       separator,
       command('Export as HTML…', CommandId.FileExportHtml),
       command('Export as PDF…', CommandId.FileExportPdf),
+      command('Export as Image (PNG)…', CommandId.FileExportImage),
       separator,
       command(mac ? 'Reveal in Finder' : 'Reveal in Folder', CommandId.FileRevealInFolder),
       separator,

@@ -122,6 +122,14 @@ describe('showExportDialog', () => {
         title: 'Export as HTML',
       }),
     );
+    await showExportDialog(null, 'notes.md', 'png');
+    expect(electron.dialog.showSaveDialog).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        defaultPath: join('/', 'home', 'me', 'Documents', 'notes.png'),
+        title: 'Export as Image',
+        filters: [{ name: 'PNG Image', extensions: ['png'] }],
+      }),
+    );
   });
 
   it('starts next to the exported document when its folder is given', async () => {
