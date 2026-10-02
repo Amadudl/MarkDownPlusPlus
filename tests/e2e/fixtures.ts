@@ -15,6 +15,7 @@
  * exit in time, and all temporary directories are removed.
  */
 import { mkdtemp, readFile, rm, writeFile, mkdir } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
 import { existsSync, realpathSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
@@ -432,7 +433,14 @@ export async function killApp(app: LaunchedApp): Promise<void> {
   // No process (already disposed) or one that already exited: nothing to close.
   if (child?.exitCode !== null || child.signalCode !== null) return;
   const exited = new Promise<void>((resolvePromise) => child.once('exit', () => resolvePromise()));
-  child.kill('SIGKILL');
+  if (process.platform === 'win32' && child.pid !== undefined) {
+    // Windows does not take Electron's helper processes down with the main process; they
+    // would keep the single-instance lock, so the next launch would exit as a "second
+    // instance". An OS restart or "End task" ends the whole tree, so do the same.
+    execFileSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
+  } else {
+    child.kill('SIGKILL');
+  }
   await exited;
 }
 
