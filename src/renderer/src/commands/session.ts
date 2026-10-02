@@ -17,10 +17,72 @@ export function currentSession(): SessionState {
   };
 }
 
+/** The session to persist: the open files, or an empty one when session restore is disabled. */
+function sessionToPersist(): SessionState {
+  const restore = useSettings.getState().settings.editor.restoreSession;
+  return restore ? currentSession() : { documents: [], activePath: null };
+}
+
 /** Persists the session (or an empty one when session restore is disabled). */
 export async function saveSession(): Promise<void> {
-  const restore = useSettings.getState().settings.editor.restoreSession;
-  await getApi().session.save(restore ? currentSession() : { documents: [], activePath: null });
+  await getApi().session.save(sessionToPersist());
+}
+
+/** Delay that coalesces bursts of changes (e.g. opening several files) into one write. */
+export const SESSION_SAVE_DELAY_MS = 300;
+
+/**
+ * Keeps the persisted session in sync with the open tabs while the app runs, so that
+ * a crash, a force-quit or an OS restart that never runs the close handshake still
+ * restores every file that was open. Writes are debounced and skipped when nothing
+ * relevant changed (typing in a document does not touch the session).
+ *
+ * Nothing is written before `ready` settles: until the startup sequence has restored
+ * the previous session, the (still empty) tab list must not overwrite it.
+ * @returns a function that stops the synchronisation.
+ */
+export function startSessionPersistence(
+  ready: Promise<unknown>,
+  delayMs: number = SESSION_SAVE_DELAY_MS,
+): () => void {
+  let active = false;
+  let stopped = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let lastSaved: string | null = null;
+
+  const flush = (): void => {
+    timer = undefined;
+    if (!active || stopped) return;
+    const session = sessionToPersist();
+    const key = JSON.stringify(session);
+    if (key === lastSaved) return;
+    lastSaved = key;
+    getApi()
+      .session.save(session)
+      .catch((error: unknown) => {
+        // Retry with the next change instead of believing the failed state was saved.
+        lastSaved = null;
+        console.error('Could not save the session', error);
+      });
+  };
+  const schedule = (): void => {
+    if (timer !== undefined) clearTimeout(timer);
+    timer = setTimeout(flush, delayMs);
+  };
+
+  const offDocuments = useDocuments.subscribe(schedule);
+  const offSettings = useSettings.subscribe(schedule);
+  const start = (): void => {
+    active = true;
+    schedule();
+  };
+  ready.then(start, start);
+  return () => {
+    stopped = true;
+    if (timer !== undefined) clearTimeout(timer);
+    offDocuments();
+    offSettings();
+  };
 }
 
 async function restoreSession(): Promise<void> {

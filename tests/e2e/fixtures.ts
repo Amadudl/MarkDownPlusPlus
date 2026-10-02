@@ -258,9 +258,19 @@ export interface LaunchedApp {
 
 const CLOSE_TIMEOUT_MS = 15_000;
 
+/** The Electron process, or null when Playwright already disposed it (e.g. after {@link killApp}). */
+function processOf(app: ElectronApplication): ReturnType<ElectronApplication['process']> | null {
+  try {
+    return app.process();
+  } catch {
+    return null;
+  }
+}
+
 async function closeApp(app: ElectronApplication, stubs: NativeStubs): Promise<void> {
-  const child = app.process();
-  if (child.exitCode !== null || child.signalCode !== null) return;
+  const child = processOf(app);
+  // No process (already disposed) or one that already exited: nothing to close.
+  if (child?.exitCode !== null || child.signalCode !== null) return;
   // Never block on a native prompt: answer "Don't Save" / "Keep My Version".
   await stubs.queueMessageBox(1, 1, 1, 1, 1, 1, 1, 1).catch(() => undefined);
   let timer: NodeJS.Timeout | undefined;
@@ -411,6 +421,19 @@ export async function pressShortcut(app: LaunchedApp, accelerator: string): Prom
     },
     { key, modifiers },
   );
+}
+
+/**
+ * Kills the app like an OS restart, a crash or a force quit would: no close handshake,
+ * no chance to save anything on the way out.
+ */
+export async function killApp(app: LaunchedApp): Promise<void> {
+  const child = processOf(app.electronApp);
+  // No process (already disposed) or one that already exited: nothing to close.
+  if (child?.exitCode !== null || child.signalCode !== null) return;
+  const exited = new Promise<void>((resolvePromise) => child.once('exit', () => resolvePromise()));
+  child.kill('SIGKILL');
+  await exited;
 }
 
 /** Opens files through the stubbed "Open" dialog (toolbar-less: via the command palette command). */

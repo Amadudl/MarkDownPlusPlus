@@ -353,8 +353,10 @@ Local images are embedded so the export also works on other computers.
   Autosave only applies to documents that already have a file name, and never overwrites
   a file that was changed by another program.
 - **Session restore** (on by default) reopens the tabs of your last session, each in the
-  mode it was in, and activates the tab that was active. Unsaved new documents are not
-  part of the session; MarkDown++ asks you about them when you quit.
+  mode it was in, and activates the tab that was active. The session is saved while you
+  work — right after you open, close or switch a tab or change its mode — so it also
+  survives a crash, a force quit or an OS restart. Unsaved new documents are not part of
+  the session; MarkDown++ asks you about them when you quit.
 
 ## Files changed by other programs
 

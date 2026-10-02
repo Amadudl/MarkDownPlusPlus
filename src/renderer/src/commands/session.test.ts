@@ -1,10 +1,18 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeFile, type FakeApi } from '@renderer/test/fakeApi';
 import { resetApp, setSettings } from '@renderer/test/utils';
 import { selectActiveDocument, useDocuments } from '@renderer/store/documents';
 import { useSettings } from '@renderer/store/settings';
 import { useUi } from '@renderer/store/ui';
-import { bindAppEvents, currentSession, handleCloseRequest, saveSession, startup } from './session';
+import {
+  bindAppEvents,
+  currentSession,
+  handleCloseRequest,
+  saveSession,
+  SESSION_SAVE_DELAY_MS,
+  startSessionPersistence,
+  startup,
+} from './session';
 
 const docs = useDocuments.getState;
 
@@ -165,5 +173,117 @@ describe('session', () => {
     await vi.waitFor(() => expect(api.app.closeReady).toHaveBeenCalled());
     stop();
     expect(api.listenerCounts()).toMatchObject({ openFiles: 0, closeRequested: 0 });
+  });
+});
+
+describe('continuous session persistence', () => {
+  let api: FakeApi;
+  beforeEach(() => {
+    api = resetApp([fakeFile('/a.md', 'A'), fakeFile('/b.md', 'B')]);
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const settle = () => vi.advanceTimersByTimeAsync(SESSION_SAVE_DELAY_MS);
+
+  it('writes nothing before startup has restored the previous session', async () => {
+    let finishStartup!: () => void;
+    const stop = startSessionPersistence(new Promise<void>((resolve) => (finishStartup = resolve)));
+    docs().openFile(fakeFile('/a.md'), 'source');
+    await settle();
+    expect(api.session.save).not.toHaveBeenCalled();
+    finishStartup();
+    await settle();
+    expect(api.session.save).toHaveBeenCalledTimes(1);
+    expect(api.state.session).toEqual({
+      documents: [{ path: '/a.md', mode: 'source' }],
+      activePath: '/a.md',
+    });
+    stop();
+  });
+
+  it('saves opening, switching and closing tabs, debounced and only when the session changed', async () => {
+    const stop = startSessionPersistence(Promise.resolve());
+    await settle();
+    expect(api.state.session).toEqual({ documents: [], activePath: null });
+    docs().openFile(fakeFile('/a.md'), 'wysiwyg');
+    docs().openFile(fakeFile('/b.md'), 'wysiwyg');
+    await settle();
+    expect(api.session.save).toHaveBeenCalledTimes(2);
+    expect(api.state.session?.documents.map((doc) => doc.path)).toEqual(['/a.md', '/b.md']);
+    expect(api.state.session?.activePath).toBe('/b.md');
+
+    // Typing changes the document but not the session: no write.
+    const [first, second] = docs().documents;
+    docs().updateContent(second!.id, 'B edited');
+    await settle();
+    expect(api.session.save).toHaveBeenCalledTimes(2);
+
+    docs().setMode(first!.id, 'source');
+    docs().activate(first!.id);
+    await settle();
+    expect(api.state.session).toEqual({
+      documents: [
+        { path: '/a.md', mode: 'source' },
+        { path: '/b.md', mode: 'wysiwyg' },
+      ],
+      activePath: '/a.md',
+    });
+    docs().close(second!.id);
+    await settle();
+    expect(api.state.session?.documents.map((doc) => doc.path)).toEqual(['/a.md']);
+    expect(api.session.save).toHaveBeenCalledTimes(4);
+    stop();
+  });
+
+  it('stores an empty session as soon as restoring is turned off', async () => {
+    docs().openFile(fakeFile('/a.md'), 'source');
+    const stop = startSessionPersistence(Promise.resolve());
+    await settle();
+    expect(api.state.session?.documents).toHaveLength(1);
+    setSettings(api, { editor: { restoreSession: false } });
+    await settle();
+    expect(api.state.session).toEqual({ documents: [], activePath: null });
+    stop();
+  });
+
+  it('starts even when startup failed', async () => {
+    docs().openFile(fakeFile('/a.md'), 'source');
+    const stop = startSessionPersistence(Promise.reject(new Error('startup failed')));
+    await settle();
+    expect(api.state.session?.documents).toHaveLength(1);
+    stop();
+  });
+
+  it('retries after a failed write instead of assuming it was saved', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(api.session.save).mockRejectedValueOnce(new Error('disk full'));
+    docs().openFile(fakeFile('/a.md'), 'source');
+    const stop = startSessionPersistence(Promise.resolve());
+    await settle();
+    expect(error).toHaveBeenCalledWith('Could not save the session', expect.any(Error));
+    expect(api.state.session).toBeNull();
+    // The next change (even back and forth to the same session) writes again.
+    docs().activate(docs().documents[0]!.id);
+    useDocuments.setState({ activeId: null });
+    useDocuments.setState({ activeId: docs().documents[0]!.id });
+    await settle();
+    expect(api.state.session?.documents).toHaveLength(1);
+    error.mockRestore();
+    stop();
+  });
+
+  it('stops listening and drops a pending write when stopped', async () => {
+    const stop = startSessionPersistence(Promise.resolve());
+    await settle();
+    vi.mocked(api.session.save).mockClear();
+    docs().openFile(fakeFile('/a.md'), 'source');
+    stop();
+    await settle();
+    docs().openFile(fakeFile('/b.md'), 'source');
+    await settle();
+    expect(api.session.save).not.toHaveBeenCalled();
   });
 });

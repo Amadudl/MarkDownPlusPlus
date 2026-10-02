@@ -112,7 +112,10 @@ export function EditorSection(): JSX.Element {
           onChange={(newLineEnding) => set({ newLineEnding })}
         />
       </SettingRow>
-      <SettingRow label="Restore session" description="Reopen the files that were open when you quit.">
+      <SettingRow
+        label="Restore session"
+        description="Reopen the files that were open last time, even after a crash or restart."
+      >
         <Toggle
           label="Restore session"
           checked={editor.restoreSession}

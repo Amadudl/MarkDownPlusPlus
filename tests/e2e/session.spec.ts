@@ -1,5 +1,16 @@
-import { rm } from 'node:fs/promises';
-import { expect, sourceText, switchMode, tab, tabs, test, visualEditor } from './fixtures';
+import { readFile, rm } from 'node:fs/promises';
+import { join } from 'node:path';
+import {
+  expect,
+  killApp,
+  openViaDialog,
+  sourceText,
+  switchMode,
+  tab,
+  tabs,
+  test,
+  visualEditor,
+} from './fixtures';
 
 test.describe('Session restore', () => {
   test('reopens the files, their modes and the active tab after a relaunch', async ({
@@ -29,6 +40,36 @@ test.describe('Session restore', () => {
     await expect(
       window.getByRole('radiogroup', { name: 'Editor mode' }).getByRole('radio', { name: 'Markdown' }),
     ).toHaveAttribute('aria-checked', 'true');
+    expect(await sourceText(window)).toBe('# Second\n\nAnother document.\n');
+  });
+
+  test('restores every open file after the app was killed (OS restart, crash, force quit)', async ({
+    launch,
+    workspace,
+    userDataDir,
+  }) => {
+    const first = await launch({ files: [workspace.path('notes.md')] });
+    // Files opened later in the session, not only those from the last regular start.
+    await openViaDialog(first, [workspace.path('second.md'), workspace.path('third.md')]);
+    await expect(tabs(first.window)).toHaveCount(3);
+    await tab(first.window, 'second.md').click();
+    await switchMode(first.window, 'Markdown');
+    // The session is written while the app runs, shortly after each change.
+    await expect
+      .poll(async () => {
+        const session = await readFile(join(userDataDir, 'session.json'), 'utf8').catch(() => '');
+        return session.includes('third.md') && session.includes('"mode": "source"');
+      })
+      .toBe(true);
+    await killApp(first);
+
+    const second = await launch();
+    const { window } = second;
+    await expect(tabs(window)).toHaveCount(3);
+    await expect(tabs(window).nth(0)).toContainText('notes.md');
+    await expect(tabs(window).nth(1)).toContainText('second.md');
+    await expect(tabs(window).nth(2)).toContainText('third.md');
+    await expect(tab(window, 'second.md')).toHaveAttribute('aria-selected', 'true');
     expect(await sourceText(window)).toBe('# Second\n\nAnother document.\n');
   });
 

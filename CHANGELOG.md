@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Session restore now survives a crash, a force quit or an OS restart: the open tabs, their
+  modes and the active tab are saved while you work instead of only when the app quits
+  normally. Previously, files opened since the last regular quit were not reopened.
+
 ## [1.0.3] - 2026-09-30
 
 ### Added
