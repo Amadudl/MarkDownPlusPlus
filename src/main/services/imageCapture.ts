@@ -121,10 +121,14 @@ export async function capturePageAsPng(target: CaptureDebugger, cssWidth: number
   if (attachedHere) target.attach('1.3');
   try {
     const viewport = { width: Math.ceil(cssWidth), height: VIEWPORT_HEIGHT, mobile: false };
+    // Classic (non-overlay) scrollbars of tall pages would take ~15 px from the layout
+    // width on Windows, Linux and some macOS setups; an image has no scrollbar.
+    await target.sendCommand('Emulation.setScrollbarsHidden', { hidden: true });
     await target.sendCommand('Emulation.setDeviceMetricsOverride', { ...viewport, deviceScaleFactor: 1 });
     const metrics = await target.sendCommand('Page.getLayoutMetrics');
     if (!isLayoutMetrics(metrics)) throw new Error('Could not measure the document');
-    const plan = planCapture(metrics.cssContentSize.width, metrics.cssContentSize.height);
+    // The image is exactly as wide as the page it was laid out for.
+    const plan = planCapture(viewport.width, metrics.cssContentSize.height);
     await target.sendCommand('Emulation.setDeviceMetricsOverride', {
       ...viewport,
       deviceScaleFactor: plan.scale,

@@ -147,14 +147,16 @@ describe('capturePageAsPng', () => {
     expect(target.attach).toHaveBeenCalledWith('1.3');
     expect(target.detach).toHaveBeenCalled();
     expect(target.calls.map((call) => call.method)).toEqual([
+      'Emulation.setScrollbarsHidden',
       'Emulation.setDeviceMetricsOverride',
       'Page.getLayoutMetrics',
       'Emulation.setDeviceMetricsOverride',
       'Page.captureScreenshot',
     ]);
-    expect(target.calls[0]?.params).toEqual({ width: 892, height: 800, mobile: false, deviceScaleFactor: 1 });
-    expect(target.calls[2]?.params).toMatchObject({ deviceScaleFactor: 2 });
-    expect(target.calls[3]?.params).toEqual({
+    expect(target.calls[0]?.params).toEqual({ hidden: true });
+    expect(target.calls[1]?.params).toEqual({ width: 892, height: 800, mobile: false, deviceScaleFactor: 1 });
+    expect(target.calls[3]?.params).toMatchObject({ deviceScaleFactor: 2 });
+    expect(target.calls[4]?.params).toEqual({
       format: 'png',
       captureBeyondViewport: true,
       clip: { x: 0, y: 0, width: 892, height: 1000, scale: 1 },
@@ -181,6 +183,14 @@ describe('capturePageAsPng', () => {
       [4096, 4096],
       [8192, 808],
     ]);
+  });
+
+  it('captures exactly the requested width, even if the measured content is narrower or wider', async () => {
+    for (const measured of [877, 1200]) {
+      const target = fakeDebugger({ cssContentSize: { width: measured, height: 100 } });
+      const png = await capturePageAsPng(target, 892);
+      expect(JSON.parse(png.toString())).toMatchObject({ width: 1784 });
+    }
   });
 
   it('leaves an already attached debugger attached', async () => {
