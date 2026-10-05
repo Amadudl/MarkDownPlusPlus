@@ -147,8 +147,8 @@ explain why in the PR and get a maintainer's explicit approval.
 Every dependency is a long-term maintenance and security cost. A PR that adds a
 dependency must explain why it is needed, why existing dependencies or a small amount of
 code are not enough, and confirm that the package is maintained, widely used and has a
-compatible license. Dependencies are pinned to exact versions and updated through
-Dependabot.
+compatible license. Dependencies are pinned to exact versions and updated deliberately by
+the maintainers (see [Updating dependencies](docs/development.md#updating-dependencies)).
 
 ## Documentation
 

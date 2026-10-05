@@ -117,7 +117,8 @@ Secrets are passed only through the environment of the single packaging step of 
 matching OS (never through `$GITHUB_ENV`), so no other step or third-party action can
 read them, and they are never printed. The packaging job runs `npm ci --ignore-scripts`,
 so no dependency install script runs in the job that handles the secrets. All actions
-are pinned to full commit SHAs (kept current by Dependabot).
+are pinned to full commit SHAs (updated by hand, see
+[Updating dependencies](development.md#updating-dependencies)).
 Forks do not receive secrets, so release builds from forks are always unsigned.
 
 ## Hardening that ships with every build

@@ -16,6 +16,7 @@ debugging, testing, code quality tools, icons and local packaging. Read
 - [Generating icons](#generating-icons)
 - [Packaging locally](#packaging-locally)
 - [Toolchain notes](#toolchain-notes)
+  - [Updating dependencies](#updating-dependencies)
 - [Troubleshooting](#troubleshooting)
 
 ## Prerequisites
@@ -313,8 +314,22 @@ exceptions that `npm outdated` reports:
   24.x; newer majors would type APIs the app cannot use at runtime. Bump it together with
   an Electron major that moves to a newer Node line.
 
-Both pins are encoded as `ignore` rules in `.github/dependabot.yml`, so Dependabot does
-not propose the incompatible majors; lift the rule together with the pin.
+Keep both pins when updating dependencies (see below); lift them together.
+
+### Updating dependencies
+
+The project does not use automated dependency pull requests. Dependencies and pinned
+GitHub Actions are updated deliberately, typically before a release:
+
+1. `npm outdated` lists newer versions; `npm audit` lists known vulnerabilities (it must
+   report none).
+2. Update the packages with exact versions (`npm install -E <package>@<version>`),
+   respecting the pins above. For GitHub Actions, replace the full commit SHA together
+   with the version comment.
+3. `npm run licenses` regenerates `THIRD_PARTY_LICENSES.md` (the test suite fails when it
+   is out of date or a new license is not allowed).
+4. `npm run verify` must pass without warnings; add a `CHANGELOG.md` entry for updates
+   that change the shipped app (for example a new Electron version).
 
 The `engines` field (`node >=22.12.0`) only describes the Node version needed for the
 tooling (Vite, Vitest, ESLint, electron-builder); the app itself always runs on the Node

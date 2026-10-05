@@ -126,7 +126,8 @@ arbitrary files** (a document can only _display_ local image files, see
   validation and loading the app only from the ASAR archive.
 - macOS builds use the hardened runtime with a single entitlement (`allow-jit`).
 - Dependencies are pinned in `package-lock.json`, GitHub Actions are pinned to full
-  commit SHAs, both are updated through Dependabot, and the code is scanned with CodeQL
+  commit SHAs, both are updated deliberately and reviewed by the maintainers, `npm audit`
+  must report no vulnerabilities, and the code is scanned with CodeQL
   on every push to `main`, every pull request to `main` and weekly.
 - Release signing credentials are scoped to the single packaging step that needs them,
   and the release packaging job installs dependencies without lifecycle scripts.

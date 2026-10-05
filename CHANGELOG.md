@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Dependencies are no longer updated through automated Dependabot pull requests; the
+  maintainers update them deliberately (see `docs/development.md`, "Updating
+  dependencies").
+
 ## [1.0.5] - 2026-10-02
 
 ### Added
