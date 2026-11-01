@@ -75,13 +75,14 @@ function mentions(line, s,   pos, off, b, a, a2) {
   }
   return 0
 }
-function covered(p,   i, j, n, parts, pre) {
+function covered(p, pfx,   i, j, n, parts, pre) {
   for (i = 1; i <= nl; i++) if (mentions(L[i], p)) return 1
+  if (pfx == "") return 0
   n = split(p, parts, "/")
   pre = ""
   for (j = 1; j < n; j++) {
     pre = pre parts[j] "/"
-    for (i = 1; i <= nl; i++) if (mentions(L[i], pre)) return 1
+    for (i = 1; i <= nl; i++) if (tolower(L[i]) ~ pfx && mentions(L[i], pre)) return 1
   }
   return 0
 }
@@ -106,7 +107,10 @@ awk '
 AWK_NPM='
 function ownv(v,  l) {
   l = tolower(v)
-  return v ~ /^(workspace|file|link):/ || l ~ /github(\.com[\/:]|:)amadudl\/lib-/ || l ~ /^amadudl\/lib-/
+  if (v ~ /^workspace:/) return 1
+  if (v ~ /^(file|link):/) { sub(/[#?].*$/, "", l); return l !~ /\.(whl|tgz|tar|tar\.gz|tar\.bz2|tar\.xz|zip)$/ }
+  if (l ~ /(\/|:)\.\.?(\/|$)|%2e/) return 0
+  return l ~ /^(git\+)?(https:\/\/|ssh:\/\/git@|git@)github\.com[\/:]amadudl\/lib-[a-z0-9._-]+(\.git)?([\/#?@]|$)/ || l ~ /^(github:)?amadudl\/lib-[a-z0-9._-]+(\.git)?([\/#?@]|$)/
 }
 { s = s $0 "\n" }
 END {
@@ -157,7 +161,13 @@ END {
 }'
 
 AWK_CARGO='
-function own(v) { v = tolower(v); return v ~ /github\.com[\/:]amadudl\/lib-/ }
+function own(v,  g) {
+  v = tolower(v)
+  if (match(v, /(^|[{, \t])git[ \t]*=[ \t]*"[^"]*"/)) { g = substr(v, RSTART, RLENGTH); sub(/^[^"]*"/, "", g); sub(/"$/, "", g) }
+  else { g = v; gsub(/^[ \t"\047]+|[ \t"\047]+$/, "", g) }
+  if (g ~ /(\/|:)\.\.?(\/|$)|%2e/) return 0
+  return g ~ /^(git\+)?(https:\/\/|ssh:\/\/git@|git@)github\.com[\/:]amadudl\/lib-[a-z0-9._-]+(\.git)?([\/#?@]|$)/
+}
 function unq(s) { sub(/[ \t]#.*$/, "", s); gsub(/^[ \t"\047]+|[ \t"\047]+$/, "", s); return s }
 function add(n) { if (!(n in seen)) { seen[n] = 1; ord[++cnt] = n } }
 {
@@ -199,12 +209,18 @@ function add(n) { if (!(n in seen)) { seen[n] = 1; ord[++cnt] = n } }
 END { for (i = 1; i <= cnt; i++) { n = ord[i]; r = (n in real) ? real[n] : n; print "dep\t" r "\t" ((n in ownf) ? "own" : "ext") } }'
 
 AWK_PYCOMMON='
-function own(v) { v = tolower(v); return v ~ /github(\.com[\/:]|:)amadudl\/lib-/ }
+function own(v,  g) {
+  g = tolower(v); if (g ~ /^[^:\/]*@/) sub(/^[^@]*@[ \t]*/, "", g); sub(/^[ \t]+/, "", g)
+  if (g ~ /(\/|:)\.\.?(\/|$)|%2e/) return 0
+  return g ~ /^(git\+)?(https:\/\/|ssh:\/\/git@|git@)github\.com[\/:]amadudl\/lib-[a-z0-9._-]+(\.git)?([\/#?@]|$)/ || g ~ /^github:amadudl\/lib-[a-z0-9._-]+(\.git)?([\/#?@]|$)/
+}
+function arch(s) { s = tolower(s); sub(/[ \t]+--.*$/, "", s); sub(/[ \t]*;.*$/, "", s); sub(/#.*$/, "", s); sub(/[ \t"\047]+$/, "", s); return s ~ /\.(whl|tgz|tar|tar\.gz|tar\.bz2|tar\.xz|zip)$/ }
 function emit(r,   name, rest) {
   if (match(r, /^[ \t]*[A-Za-z0-9][A-Za-z0-9._-]*/)) {
     name = substr(r, RSTART, RLENGTH); gsub(/[ \t]/, "", name)
     rest = substr(r, RSTART + RLENGTH)
-    if (rest ~ /@/ && (own(rest) || tolower(rest) ~ /@[ \t]*file:/)) return
+    sub(/[ \t]*;.*$/, "", rest)
+    if (rest ~ /^[ \t]*(\[[^]]*\])?[ \t]*@/ && (own(rest) || (tolower(rest) ~ /^[^@]*@[ \t]*file:/ && !arch(rest)))) return
     print "dep\t" name "\text"
   }
 }'
@@ -218,8 +234,12 @@ AWK_REQ='
   if (l == "") next
   if (l ~ /^(-e|--editable)([ \t=]|$)/) sub(/^(-e|--editable)[ \t=]*/, "", l)
   else if (l ~ /^-/) next
-  if (l ~ /^(\.|\/|~|file:)/) next
+  if (l ~ /^(\.|\/|~|file:)/) {
+    if (arch(l)) { nm = l; sub(/[ \t]+--.*$/, "", nm); sub(/[ \t]*;.*$/, "", nm); sub(/#.*$/, "", nm); sub(/[ \t]+$/, "", nm); sub(/^.*\//, "", nm); print "dep\t" nm "\text" }
+    next
+  }
   if (l ~ /^[A-Za-z][A-Za-z0-9+.-]*:\/\// || l ~ /^git\+/) {
+    sub(/[ \t]*;.*$/, "", l)
     if (own(l)) next
     if (match(l, /[#&]egg=[A-Za-z0-9._-]+/)) { nm = substr(l, RSTART + 5, RLENGTH - 5); print "dep\t" nm "\text"; next }
     print "dep\t" l "\text"; next
@@ -228,6 +248,8 @@ AWK_REQ='
 }'
 
 AWK_PYP='
+function flushsub() { if (sn != "" && tolower(sn) != "python" && !sown) print "dep\t" sn "\text"; sn = "" }
+END { flushsub() }
 function scan(t,   i, c) {
   for (i = 1; i <= length(t); i++) {
     c = substr(t, i, 1)
@@ -247,7 +269,18 @@ function scan(t,   i, c) {
   line = $0
   if (inarr) { scan(line); next }
   t = line; sub(/^[ \t]+/, "", t); sub(/[ \t]+$/, "", t)
-  if (t ~ /^\[/) { h = t; sub(/^\[+[ \t]*/, "", h); sub(/[ \t]*\].*$/, "", h); gsub(/"/, "", h); next }
+  if (t ~ /^\[/) {
+    flushsub()
+    h0 = t; sub(/^\[+[ \t]*/, "", h0); sub(/[ \t]*\][ \t]*(#.*)?$/, "", h0)
+    h = h0; gsub(/"/, "", h)
+    if (h0 ~ /^tool\.poetry\.((dev-)?dependencies|group\.("[^"]+"|[^."]+)\.dependencies)\.("[^"]+"|[^."]+)$/) { match(h0, /\.("[^"]+"|[^."]+)$/); sn = substr(h0, RSTART + 1); gsub(/"/, "", sn); sown = 0 }
+    next
+  }
+  if (sn != "") {
+    if (t ~ /^path[ \t]*=/) { pp = t; sub(/^path[ \t]*=[ \t]*/, "", pp); gsub(/^["\047]|["\047][ \t]*(#.*)?$/, "", pp); if (!arch(pp)) sown = 1 }
+    else if (t ~ /^git[ \t]*=/) { g = t; sub(/^git[ \t]*=[ \t]*/, "", g); gsub(/^["\047]|["\047][ \t]*(#.*)?$/, "", g); if (own(g)) sown = 1 }
+    next
+  }
   if (t == "" || t ~ /^#/) next
   if ((h == "project" || h == "tool.poetry") && t ~ /^name[ \t]*=/) {
     v = t; sub(/^name[ \t]*=[ \t]*["\047]/, "", v); sub(/["\047].*$/, "", v); print "self\t" v; next
@@ -259,7 +292,8 @@ function scan(t,   i, c) {
     k = t; sub(/[ \t]*=.*$/, "", k); gsub(/"/, "", k)
     v = t; sub(/^[^=]*=[ \t]*/, "", v)
     if (tolower(k) == "python") next
-    if (v ~ /(\{|,)[ \t]*path[ \t]*=/ || own(v)) next
+    if (match(v, /(\{|,)[ \t]*path[ \t]*=[ \t]*("[^"]*"|\047[^\047]*\047)/)) { pp = substr(v, RSTART, RLENGTH); sub(/^[^"\047]*["\047]/, "", pp); sub(/["\047]$/, "", pp); if (!arch(pp)) next }
+    if (match(v, /(\{|,)[ \t]*git[ \t]*=[ \t]*"[^"]*"/)) { g = substr(v, RSTART, RLENGTH); sub(/^[^"]*"/, "", g); sub(/"$/, "", g); if (own(g)) next }
     print "dep\t" k "\text"
   }
 }'
@@ -300,7 +334,7 @@ while IFS= read -r line; do err "$line"; done < "$tmp/missing"
 # Nicht geparste Manifesttypen
 OPEN="$tmp/open" awk "$AWK_MENTION"'
 BEGIN { loadlines(ENVIRON["OPEN"]) }
-{ if (covered($0)) print "ok\t" $0; else print "bad\t" $0 }' "$tmp/unknown" > "$tmp/unknown.res"
+{ if (covered($0, "")) print "ok\t" $0; else print "bad\t" $0 }' "$tmp/unknown" > "$tmp/unknown.res"
 while IFS="$tab" read -r st path; do
   [ -n "$path" ] || continue
   if [ "$st" = ok ]; then
@@ -320,11 +354,11 @@ if has .assets-repo || [ -f .assets-repo ]; then
   blob ATTRIBUTION.md > "$tmp/attr"
   OPEN="$tmp/attr" awk "$AWK_MENTION"'
   BEGIN { loadlines(ENVIRON["OPEN"]) }
-  !covered($0) { print $0 ": Mediendatei fehlt in ATTRIBUTION.md (Herkunft, Lizenz, Urheber)" }' "$tmp/media" > "$tmp/media.res"
+  !covered($0, ".") { print $0 ": Mediendatei fehlt in ATTRIBUTION.md (Herkunft, Lizenz, Urheber)" }' "$tmp/media" > "$tmp/media.res"
 else
   OPEN="$tmp/open" awk "$AWK_MENTION"'
   BEGIN { loadlines(ENVIRON["OPEN"]) }
-  !covered($0) { print $0 ": Medien oder Schriftdatei im Repo; erlaubt nur ueber den Assets Weg (assets.lock, sh .githooks/assets-fetch.sh) oder als Bestand mit offener Zeile in cleanup.md" }' "$tmp/media" > "$tmp/media.res"
+  !covered($0, "ziel:[ \t]*assets") { print $0 ": Medien oder Schriftdatei im Repo; erlaubt nur ueber den Assets Weg (assets.lock, sh .githooks/assets-fetch.sh) oder als Bestand mit offener Zeile in cleanup.md" }' "$tmp/media" > "$tmp/media.res"
 fi
 while IFS= read -r line; do err "$line"; done < "$tmp/media.res"
 
@@ -334,9 +368,12 @@ if has assets.lock; then
   if ! sed -n '1p' "$tmp/lock" | grep -q '^tag=[^[:space:]]'; then
     err "assets.lock: erste Zeile muss tag=<tag> sein"
   fi
-  if sed -n '2,$p' "$tmp/lock" | grep -Eq '(^|/)\.\.(/|$)|^/'; then
-    err "assets.lock: Pfade muessen relativ sein und duerfen kein .. enthalten"
+  if sed -n '2,$p' "$tmp/lock" | tr -d '\r' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -v '^#' | grep -v '^$' | grep -Evq '^[A-Za-z0-9_][A-Za-z0-9._ -]*(/[A-Za-z0-9_][A-Za-z0-9._ -]*)*/?$'; then
+    err "assets.lock: Pfade muessen relativ sein und duerfen kein .. enthalten (erlaubt: Segmente aus A-Z a-z 0-9 _ . - Leerzeichen, nicht mit Punkt beginnend, Trenner /)"
   fi
+  sed -n '2,$p' "$tmp/lock" | tr -d '\r' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -v '^#' | grep -v '^$' > "$tmp/lockpaths" || true
+  awk '{ p = $0; sub(/\/$/, "", p); a[NR] = p } END { for (i = 1; i <= NR; i++) for (j = 1; j <= NR; j++) if (i != j && (a[i] == a[j] || index(a[j], a[i] "/") == 1)) print a[i] " / " a[j] }' "$tmp/lockpaths" > "$tmp/lockover"
+  while IFS= read -r line; do err "assets.lock: Pfade ueberschneiden sich: $line"; done < "$tmp/lockover"
 fi
 
 if [ "$fail" -ne 0 ]; then
