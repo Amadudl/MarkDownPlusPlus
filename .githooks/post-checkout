@@ -1,0 +1,8 @@
+#!/bin/sh
+# Git LFS Hook post-checkout (IEX-Labs-Hook-Kit v3). core.hooksPath = .githooks
+# verdraengt die Hooks aus "git lfs install"; dieser ruft git lfs auf, wenn
+# das Repo LFS nutzt (.gitattributes mit filter=lfs). Siehe lib/lfs.sh.
+. "$(dirname "$0")/lib/lfs.sh"
+iex_lfs_genutzt || exit 0
+iex_lfs_vorhanden post-checkout || exit 2
+exec git lfs post-checkout "$@"

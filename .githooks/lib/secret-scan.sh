@@ -32,7 +32,9 @@ fi
 # 3. Eingebaute Muster auf hinzugefuegten Zeilen
 PATTERNS='(AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{40,}|sk-ant-[A-Za-z0-9_-]{20,}|sk-(proj-)?[A-Za-z0-9]{32,}|sk-or-v1-[A-Za-z0-9]{20,}|sk_live_[A-Za-z0-9]{16,}|rk_live_[A-Za-z0-9]{16,}|whsec_[A-Za-z0-9]{16,}|xox[baprs]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}|GOCSPX-[A-Za-z0-9_-]{20,}|glpat-[A-Za-z0-9_-]{20,}|npm_[A-Za-z0-9]{36}|eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|(postgres|postgresql|mysql|mongodb(\+srv)?|redis|amqp)://[^:/@ ]+:[^@/ ]{3,}@)'
 
-set -- ':(exclude).githooks/lib/secret-scan.sh'
+# Diese Datei wird mitgeprueft: Die Muster oben sind so geschrieben, dass sie
+# sich selbst nicht treffen (auf jedes Praefix folgt im Text eine Klammer, keine Geheimniszeichen).
+set --
 IGN="$(dirname "$0")/../secret-scan-ignore"
 if [ -f "$IGN" ]; then
   # Auch eine letzte Zeile ohne Zeilenende und Windows-Zeilenenden vertragen.

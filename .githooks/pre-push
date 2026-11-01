@@ -8,7 +8,24 @@
 #  .git/claude-review/last.md; behoben werden sie mit
 #      sh .githooks/fix-findings.sh      (zeigt den Bericht; Beheben mit ultracode nur nach Rueckfrage)
 #  Ueberspringen nur bewusst:  CLAUDE_REVIEW_SKIP=1 git push  oder  --no-verify
+#  Kann das Review nicht laufen (claude endet mit Fehler), wird der Push
+#  blockiert (fail closed).
+#  Nutzt das Repo Git LFS (.gitattributes mit filter=lfs), laedt der Hook
+#  zuerst die LFS Objekte hoch (git lfs pre-push), auch bei CLAUDE_REVIEW_SKIP:
+#  core.hooksPath verdraengt den Hook aus "git lfs install", ohne Upload lehnt
+#  GitHub den Push ab (GH008). Die Ref Liste auf stdin bekommen beide.
 # ============================================================
+. "$(dirname "$0")/lib/lfs.sh"
+REFS_DATEI=$(mktemp "${TMPDIR:-/tmp}/iex-refs.XXXXXX") || { echo "✗ Push blockiert: temporaere Datei fuer die Ref Liste nicht anlegbar."; exit 1; }
+trap 'rm -f "$REFS_DATEI" 2>/dev/null' EXIT
+cat > "$REFS_DATEI" || { echo "✗ Push blockiert: Ref Liste nicht lesbar."; exit 1; }
+# shellcheck disable=SC2046
+if iex_lfs_genutzt $(awk '{ print $2 }' "$REFS_DATEI"); then
+  iex_lfs_vorhanden pre-push || { echo "✗ Push blockiert: ohne LFS Upload fehlen die Dateien auf dem Remote."; exit 1; }
+  git lfs pre-push "$@" < "$REFS_DATEI" || { echo "✗ Push blockiert: git lfs pre-push ist gescheitert, LFS Objekte nicht hochgeladen."; exit 1; }
+fi
+exec < "$REFS_DATEI"
+
 [ "${CLAUDE_REVIEW_SKIP:-0}" = "1" ] && { echo "pre-push: Claude-Review uebersprungen (CLAUDE_REVIEW_SKIP=1)."; exit 0; }
 if ! command -v claude >/dev/null 2>&1; then
   echo "pre-push: 'claude' nicht im PATH — Review uebersprungen (bitte Claude Code installieren)."
@@ -264,10 +281,12 @@ rc=$?
 rm -rf "$OUT/files"
 
 if [ $rc -ne 0 ]; then
-  echo "pre-push: Claude-Review konnte nicht laufen (Exit $rc) — Push wird NICHT blockiert."
+  echo "✗ Push blockiert: Claude-Review konnte nicht laufen (Exit $rc); ohne Review kein Push."
   echo "  Ausgabe: $REPORT, Fehler: $ERRLOG"
   tail -n 5 "$ERRLOG" 2>/dev/null | sed 's/^/    /'
-  exit 0
+  echo "  Ursache beheben (etwa Anmeldung mit 'claude', Netz) und erneut pushen."
+  echo "  Bewusst ueberspringen:   CLAUDE_REVIEW_SKIP=1 git push"
+  exit 1
 fi
 
 # Nur die letzte nicht leere Zeile zaehlt, und zwar exakt: Text aus dem Diff

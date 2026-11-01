@@ -6,8 +6,10 @@
 #    Zeile 1: tag=<tag im Repo assets>
 #    danach : je Zeile ein Pfad im Repo assets (Datei oder Ordner/)
 #  Ohne assets.lock passiert nichts (Exit 0).
-#  Quelle umstellbar mit ASSETS_REPO_URL (etwa in der CI mit Token
-#  aus einem Secret oder fuer Tests mit file://).
+#  Quelle umstellbar mit ASSETS_REPO_URL (etwa fuer Tests mit file://).
+#  Zugangsdaten nicht in die URL legen, sondern ueber einen Credential
+#  Helper oder http.extraHeader; eine URL mit Zugangsdaten wird in der
+#  Ausgabe maskiert.
 #  Aufruf: sh .githooks/assets-fetch.sh
 # ============================================================
 set -eu
@@ -20,6 +22,13 @@ cd "$top"
 [ -f assets.lock ] || exit 0
 
 url=${ASSETS_REPO_URL:-https://github.com/Amadudl/assets}
+case $url in
+  *://*@*)
+    case ${url#*://} in
+      git@*) ;;
+      *) echo "✗ assets-fetch: ASSETS_REPO_URL darf keine Zugangsdaten enthalten (Credential Helper oder http.extraHeader nutzen)"; exit 1 ;;
+    esac ;;
+esac
 work=$(mktemp -d "${TMPDIR:-/tmp}/assets.XXXXXX")
 trap 'rm -rf "$work"' EXIT
 trap 'exit 1' INT TERM HUP
@@ -35,8 +44,13 @@ if [ ! -s "$work/paths" ]; then
   echo "assets-fetch: assets.lock nennt keine Pfade, nichts zu holen"
   exit 0
 fi
-if grep -Eq '(^|/)\.\.(/|$)|^/' "$work/paths"; then
-  echo "✗ assets-fetch: Pfade in assets.lock muessen relativ sein und duerfen kein .. enthalten"
+if grep -Evq '^[A-Za-z0-9_][A-Za-z0-9._ -]*(/[A-Za-z0-9_][A-Za-z0-9._ -]*)*/?$' "$work/paths"; then
+  echo "✗ assets-fetch: Pfade in assets.lock muessen relativ sein und duerfen kein .. enthalten (erlaubt: Segmente aus A-Z a-z 0-9 _ . - Leerzeichen, nicht mit Punkt beginnend, Trenner /)"
+  exit 1
+fi
+
+if awk '{ p = $0; sub(/\/$/, "", p); a[NR] = p } END { for (i = 1; i <= NR; i++) for (j = 1; j <= NR; j++) if (i != j && (a[i] == a[j] || index(a[j], a[i] "/") == 1)) { print a[i] " / " a[j]; bad = 1 } exit !bad }' "$work/paths"; then
+  echo "✗ assets-fetch: Pfade in assets.lock duerfen sich nicht ueberschneiden (siehe oben)"
   exit 1
 fi
 
@@ -44,8 +58,26 @@ fi
 sed 's|^|/|' "$work/paths" > "$work/sparse"
 include=$(awk '{ p = $0; sub(/\/$/, "", p); printf "%s%s,%s/**", (NR > 1 ? "," : ""), p, p }' "$work/paths")
 
-echo "assets-fetch: hole $(wc -l < "$work/paths" | tr -d ' ') Pfad(e) aus $url @ $tag"
-GIT_LFS_SKIP_SMUDGE=1 git clone --quiet --depth 1 --branch "$tag" --filter=blob:none --no-checkout "$url" "$work/repo"
+safe_url=$(printf '%s' "$url" | sed -E 's|^([A-Za-z][A-Za-z0-9+.-]*://)[^/]*@|\1***@|')
+echo "assets-fetch: hole $(wc -l < "$work/paths" | tr -d ' ') Pfad(e) aus $safe_url @ $tag"
+clone_rc=0
+GIT_LFS_SKIP_SMUDGE=1 git clone --quiet --depth 1 --branch "$tag" --filter=blob:none --no-checkout "$url" "$work/repo" 2> "$work/clone.err" || clone_rc=$?
+sed -E "s|([A-Za-z][A-Za-z0-9+.-]*://)[^/ '\"]*@|\\1***@|g" "$work/clone.err" >&2
+if [ "$clone_rc" -ne 0 ]; then
+  echo "✗ assets-fetch: Klonen von $safe_url @ $tag fehlgeschlagen"
+  exit 1
+fi
+# Symlinks (120000) und Submodule (160000) im Repo assets ablehnen, wenn sie
+# ein gelisteter Pfad ist, darunter liegen oder ein Elternordner davon sind:
+# cp wuerde Links mitkopieren oder ihnen folgen, Ziele laegen ausserhalb von
+# .assets/. Geprueft wird der Baum, nicht das Arbeitsverzeichnis (Windows
+# legt Symlinks sonst als Textdateien an).
+git -C "$work/repo" -c core.quotePath=false ls-tree -r HEAD > "$work/tree"
+awk -F '\t' '{ split($1, m, " "); if (m[1] == "120000" || m[1] == "160000") print $2 }' "$work/tree" > "$work/links"
+if [ -s "$work/links" ] && awk 'NR == FNR { l[++n] = $0; next } { p = $0; sub(/\/$/, "", p); for (i = 1; i <= n; i++) if (l[i] == p || index(l[i], p "/") == 1 || index(p, l[i] "/") == 1) { print "    " l[i]; bad = 1 } } END { exit !bad }' "$work/links" "$work/paths"; then
+  echo "✗ assets-fetch: Symlink oder Submodul im Repo assets @ $tag unter den Pfaden aus assets.lock (siehe oben); abgebrochen, nichts kopiert"
+  exit 1
+fi
 git -C "$work/repo" sparse-checkout set --no-cone --stdin < "$work/sparse"
 GIT_LFS_SKIP_SMUDGE=1 git -C "$work/repo" checkout --quiet
 if git -C "$work/repo" lfs version >/dev/null 2>&1; then
@@ -74,8 +106,13 @@ while IFS= read -r p; do
   case $q in
     */*) mkdir -p "$top/.assets.new/${q%/*}" ;;
   esac
-  cp -R "$work/repo/$q" "$top/.assets.new/$q"
+  cp -RP "$work/repo/$q" "$top/.assets.new/$q"
 done < "$work/paths"
+if [ -n "$(find "$top/.assets.new" -type l 2>/dev/null | head -1)" ]; then
+  rm -rf "$top/.assets.new"
+  echo "✗ assets-fetch: Symlink in den geholten Dateien; abgebrochen, .assets/ unveraendert"
+  exit 1
+fi
 printf 'tag=%s\n' "$tag" > "$top/.assets.new/.fetched"
 rm -rf "$top/.assets"
 mv "$top/.assets.new" "$top/.assets"
