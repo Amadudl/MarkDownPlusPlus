@@ -3,6 +3,7 @@ import {
   link,
   mkdir,
   mkdtemp,
+  open,
   readdir,
   readFile,
   rm,
@@ -32,6 +33,17 @@ afterEach(async () => {
  * are covered by the platform-injected tests below.
  */
 const windows = process.platform === 'win32';
+
+/** Content, inode and owner of a file, read through one handle so they describe the same file. */
+async function snapshot(path: string): Promise<{ content: string; ino: number; uid: number }> {
+  const handle = await open(path, 'r');
+  try {
+    const { ino, uid } = await handle.stat();
+    return { content: await handle.readFile('utf8'), ino, uid };
+  } finally {
+    await handle.close();
+  }
+}
 
 describe('writeFileAtomic', () => {
   it('creates a new file and leaves no temporary files behind', async () => {
@@ -75,27 +87,24 @@ describe('writeFileAtomic', () => {
     const other = join(dir, 'hardlink.md');
     await writeFile(target, 'a much longer old content');
     await link(target, other);
-    const inode = (await stat(target)).ino;
+    const { ino } = await snapshot(target);
     await writeFileAtomic(target, 'new');
-    expect(await readFile(other, 'utf8')).toBe('new');
-    expect(await readFile(target, 'utf8')).toBe('new');
-    expect((await stat(target)).ino).toBe(inode);
+    expect(await snapshot(other)).toMatchObject({ content: 'new', ino });
+    expect(await snapshot(target)).toMatchObject({ content: 'new', ino });
     expect((await readdir(dir)).sort()).toEqual(['doc.md', 'hardlink.md']);
   });
 
   it.skipIf(windows)('writes files owned by another user in place so their owner is kept', async () => {
     const target = join(dir, 'shared.md');
     await writeFile(target, 'old');
-    const inode = (await stat(target)).ino;
-    const own = (await stat(target)).uid;
-    const getuid = vi.spyOn(process, 'getuid').mockReturnValue(own + 1);
+    const { ino, uid } = await snapshot(target);
+    const getuid = vi.spyOn(process, 'getuid').mockReturnValue(uid + 1);
     try {
       await writeFileAtomic(target, 'new');
     } finally {
       getuid.mockRestore();
     }
-    expect(await readFile(target, 'utf8')).toBe('new');
-    expect((await stat(target)).ino).toBe(inode);
+    expect(await snapshot(target)).toMatchObject({ content: 'new', ino });
   });
 
   it('replaces files atomically where user ids do not exist (Windows)', async () => {

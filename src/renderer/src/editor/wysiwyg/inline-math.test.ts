@@ -1,10 +1,11 @@
 import { nodeViewCtx, SchemaReady } from '@milkdown/kit/core';
 import type { Ctx } from '@milkdown/kit/ctx';
 import { Schema } from '@milkdown/kit/prose/model';
-import type { EditorView, NodeViewConstructor } from '@milkdown/kit/prose/view';
+import type { NodeViewConstructor } from '@milkdown/kit/prose/view';
 import { describe, expect, it, vi } from 'vitest';
 import {
   boundedInlineMath,
+  createInlineMathView,
   inlineMathNodeView,
   MATH_INLINE_NODE,
   renderInlineMath,
@@ -22,8 +23,7 @@ const schema = new Schema({
 });
 
 const math = (value: string) => schema.node('math_inline', { value });
-const view = {} as EditorView;
-const construct = (value: string) => inlineMathNodeView(math(value), view, () => 0, [], {} as never);
+const construct = (value: string) => createInlineMathView(math(value));
 
 describe('renderInlineMath', () => {
   it('bounds sizes with the configured maxSize and records the source', () => {
@@ -51,7 +51,7 @@ describe('renderInlineMath', () => {
   });
 });
 
-describe('inlineMathNodeView', () => {
+describe('createInlineMathView', () => {
   it('renders the value and re-renders only when it changes', () => {
     const nodeView = construct('x^2');
     const { dom } = nodeView;
@@ -66,13 +66,7 @@ describe('inlineMathNodeView', () => {
   });
 
   it('treats a missing value as empty', () => {
-    const nodeView = inlineMathNodeView(
-      schema.node('math_inline', { value: null }),
-      view,
-      () => 0,
-      [],
-      {} as never,
-    );
+    const nodeView = createInlineMathView(schema.node('math_inline', { value: null }));
     expect(nodeView.dom.dataset.value).toBe('');
   });
 });

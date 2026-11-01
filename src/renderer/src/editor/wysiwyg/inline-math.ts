@@ -36,9 +36,9 @@ const valueOf = (node: ProseNode): string => stringOr(node.attrs.value);
  * Node view of inline math. Crepe's schema renders inline math with KaTeX's
  * defaults (unbounded `maxSize`/`maxExpand`) and ignores the configured
  * options, so the editor renders it through this view instead. The markdown
- * mapping (the `value` attribute) is unchanged.
+ * mapping (the `value` attribute) is unchanged. It only needs the node.
  */
-export const inlineMathNodeView: NodeViewConstructor = (initialNode) => {
+export function createInlineMathView(initialNode: ProseNode): NodeView {
   const dom = document.createElement('span');
   let value = valueOf(initialNode);
   renderInlineMath(dom, value);
@@ -57,7 +57,10 @@ export const inlineMathNodeView: NodeViewConstructor = (initialNode) => {
     ignoreMutation: () => true,
   };
   return view;
-};
+}
+
+/** {@link createInlineMathView} as the node view constructor registered with Milkdown. */
+export const inlineMathNodeView: NodeViewConstructor = createInlineMathView;
 
 /** Milkdown plugin registering {@link inlineMathNodeView} for the inline math node. */
 export const boundedInlineMath: MilkdownPlugin = (ctx) => async () => {

@@ -175,10 +175,9 @@ describe('Visual mode serialisation in the tutorial', () => {
 describe('user guide', () => {
   it('lists every extension the file service opens', () => {
     const guide = read('docs/user-guide.md');
-    const paragraph =
-      /MarkDown\+\+ opens Markdown and text files with the extensions ([^.]+(?:\.[a-z]+[^.]*)+?)\. The/.exec(
-        guide.replace(/\n/g, ' '),
-      )?.[1];
+    const paragraph = /MarkDown\+\+ opens Markdown and text files with the extensions (.+?)\. The /.exec(
+      guide.replace(/\n/g, ' '),
+    )?.[1];
     expect(paragraph).toBeDefined();
     const documented = [...(paragraph ?? '').matchAll(/`(\.[a-z]+)`/g)].map((match) => match[1]);
     expect(documented).toEqual([...MARKDOWN_EXTENSIONS]);

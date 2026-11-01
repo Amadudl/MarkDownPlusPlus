@@ -294,7 +294,7 @@ describe('EditorHost', () => {
     const wrapper = vi.mocked(p.onAdapter).mock.calls[0]?.[1];
     if (wrapper === null || wrapper === undefined) throw new Error('no adapter');
     vi.mocked(fake.adapter.setMarkdown).mockImplementation((markdown) => {
-      fake.markdown = markdown.replace('*', '-');
+      fake.markdown = markdown.replaceAll('*', '-');
     });
     wrapper.setMarkdown('* two\n');
     fake.callbacks.onChange('- twox\n');

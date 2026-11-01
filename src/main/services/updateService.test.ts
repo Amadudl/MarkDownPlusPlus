@@ -637,7 +637,7 @@ describe('UpdateService.install', () => {
       await vi.runAllTimersAsync();
       expect(options.requestQuit).toHaveBeenCalledTimes(1);
       const [name] = await readdir(downloadDir);
-      expect(name).toMatch(new RegExp(`^tmp_[0-9a-f]{16}_${SETUP.replace(/[.+]/g, '\\$&')}$`));
+      expect(name).toMatch(new RegExp(`^tmp_[0-9a-f]{16}_${SETUP.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')}$`));
     } finally {
       vi.useRealTimers();
     }

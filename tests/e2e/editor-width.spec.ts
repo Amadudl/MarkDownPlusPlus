@@ -123,7 +123,7 @@ async function clickFullWidthMenuItem(app: LaunchedApp): Promise<void> {
   await app.electronApp.evaluate(({ BrowserWindow, Menu }) => {
     const target = BrowserWindow.getAllWindows()[0];
     const item = Menu.getApplicationMenu()
-      ?.items.find((entry) => entry.label.replace('&', '') === 'View')
+      ?.items.find((entry) => entry.label.replaceAll('&', '') === 'View')
       ?.submenu?.items.find((entry) => entry.label === 'Full Width');
     if (item === undefined || target === undefined) throw new Error('View â†’ Full Width is missing');
     // Electron types MenuItem.click as a bare Function; it is called like a menu activation.
