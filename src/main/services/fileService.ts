@@ -1,10 +1,11 @@
 import { constants } from 'node:fs';
-import { access, readFile, stat } from 'node:fs/promises';
+import { access, stat } from 'node:fs/promises';
 import { extname, resolve } from 'node:path';
 import type { IpcErrorCode } from '../../shared/ipc-result';
 import type { FileReadResult, FileSaveRequest, FileSaveResult, LineEnding } from '../../shared/types';
 import { writeFileAtomic } from './atomicWrite';
 import type { PathRegistry } from './pathRegistry';
+import { readRegularFile } from './regularFile';
 
 /** Largest document the editor opens or saves (50 MB). */
 export const MAX_DOCUMENT_BYTES = 50 * 1024 * 1024;
@@ -159,15 +160,14 @@ export class FileService {
   async read(inputPath: string): Promise<FileReadResult> {
     const path = resolve(inputPath);
     if (!this.registry.has(path)) throw new FileAccessError('not-allowed', path);
-    const info = await stat(path);
-    if (!info.isFile()) throw new FileAccessError('not-a-file', path);
-    if (info.size > MAX_DOCUMENT_BYTES) throw new FileAccessError('too-large', path);
-    const bytes = await readFile(path);
+    const file = await readRegularFile(path, MAX_DOCUMENT_BYTES);
+    if (file.kind !== 'ok') throw new FileAccessError(file.kind, path);
+    const bytes = file.data;
     if (hasUtf16Bom(bytes)) throw new FileAccessError('unsupported-encoding', path);
     if (bytes.includes(0)) throw new FileAccessError('binary', path);
     const decoded = decodeDocument(bytes);
     if (decoded === null) throw new FileAccessError('not-utf8', path);
-    return { path, ...decoded, mtimeMs: info.mtimeMs };
+    return { path, ...decoded, mtimeMs: file.stats.mtimeMs };
   }
 
   /**

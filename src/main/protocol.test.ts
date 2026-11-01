@@ -128,17 +128,21 @@ describe('mpp-app handler', () => {
     expect(response.status).toBe(405);
   });
 
-  it('returns 404 for traversal, folders, missing files and escaping symlinks', async () => {
-    await symlink(join(dir, 'secret.txt'), join(root, 'link.txt'));
+  it('returns 404 for traversal, folders and missing files', async () => {
     for (const url of [
       'mpp-app://bundle/%2e%2e/secret.txt',
       'mpp-app://bundle/assets',
       'mpp-app://bundle/missing.js',
-      'mpp-app://bundle/link.txt',
     ]) {
       const response = await handler()(new Request(url));
       expect(response.status, url).toBe(404);
     }
+  });
+
+  it('returns 404 for symlinks escaping the bundle', async () => {
+    await symlink(join(dir, 'secret.txt'), join(root, 'link.txt'));
+    const response = await handler()(new Request('mpp-app://bundle/link.txt'));
+    expect(response.status).toBe(404);
   });
 });
 

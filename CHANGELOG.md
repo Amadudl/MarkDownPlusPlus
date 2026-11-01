@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The outline now lists headings after one-line HTML comments written as `<!-->` or
+  `<!--->` and after `<?>`, and heading text drops HTML tags whose quoted attribute values
+  contain `>` completely, as Visual mode shows them.
+
+### Security
+
+- Opening documents, serving local images and serving the app bundle now check the file
+  type and size and read the file through one open file handle, so the checks always apply
+  to the file that is read, and a file that grows past the size limit after the check is
+  refused. FIFOs are refused without waiting for a writer.
+- The regular expression probe worker validates every message against a schema and
+  drops malformed requests without running them.
+
 ## [1.1.0] - 2026-11-01
 
 ### Added

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type { SearchQuery } from './types';
 import { compileSearchQuery, MAX_SEARCH_MATCHES } from './wysiwyg/search-matcher';
 
@@ -29,6 +30,25 @@ export interface RegexProbeRequest {
   readonly flags: string;
   readonly text: string;
   readonly limit: number;
+}
+
+/**
+ * Schema of {@link RegexProbeRequest}. The worker validates every message with
+ * it before compiling anything: only well-formed requests with valid
+ * JavaScript regular expression flags and a positive match limit are run.
+ */
+export const regexProbeRequestSchema = z.strictObject({
+  id: z.number().int().nonnegative(),
+  source: z.string(),
+  flags: z.string().regex(/^[dgimsuvy]*$/),
+  text: z.string(),
+  limit: z.number().int().positive(),
+});
+
+/** The request in data, or null when it is not a valid {@link RegexProbeRequest}. */
+export function parseRegexProbeRequest(data: unknown): RegexProbeRequest | null {
+  const parsed = regexProbeRequestSchema.safeParse(data);
+  return parsed.success ? parsed.data : null;
 }
 
 /** Answer of the probe worker. */

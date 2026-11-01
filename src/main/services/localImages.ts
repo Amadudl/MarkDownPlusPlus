@@ -1,6 +1,6 @@
-import { readFile, stat } from 'node:fs/promises';
 import { extname } from 'node:path';
 import { isUncOrDevicePath, uncHost } from '../../shared/file-url';
+import { readRegularFile } from './regularFile';
 
 /** Largest local image served to the renderer or embedded into an export (50 MB). */
 export const MAX_IMAGE_BYTES = 50 * 1024 * 1024;
@@ -62,10 +62,10 @@ export async function readLocalImage(path: string, policy: LocalImagePolicy = {}
   const mimeType = imageMimeType(path);
   if (mimeType === null || !isPermittedImagePath(path, policy)) return { kind: 'forbidden' };
   try {
-    const info = await stat(path);
-    if (!info.isFile()) return { kind: 'not-found' };
-    if (info.size > MAX_IMAGE_BYTES) return { kind: 'forbidden' };
-    return { kind: 'ok', data: await readFile(path), mimeType };
+    const file = await readRegularFile(path, MAX_IMAGE_BYTES);
+    if (file.kind === 'not-a-file') return { kind: 'not-found' };
+    if (file.kind === 'too-large') return { kind: 'forbidden' };
+    return { kind: 'ok', data: file.data, mimeType };
   } catch {
     return { kind: 'not-found' };
   }

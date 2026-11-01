@@ -1,8 +1,9 @@
-import { readFile, realpath, stat } from 'node:fs/promises';
+import { realpath } from 'node:fs/promises';
 import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { protocol } from 'electron';
 import { fromMppFileUrl, MPP_FILE_SCHEME } from '../shared/file-url';
 import { readLocalImage, type LocalImagePolicy } from './services/localImages';
+import { readRegularFile } from './services/regularFile';
 
 /** Scheme serving the bundled renderer. */
 export const APP_SCHEME = 'mpp-app';
@@ -108,9 +109,11 @@ export function createAppProtocolHandler(
     try {
       // Resolve symlinks and check containment again so links cannot leave the bundle.
       const [realRoot, realFile] = await Promise.all([realpath(rootDir), realpath(candidate)]);
-      if (!isInside(realRoot, realFile) || !(await stat(realFile)).isFile())
-        return textResponse(404, 'Not Found');
-      const body = request.method === 'HEAD' ? null : await readFile(realFile);
+      if (!isInside(realRoot, realFile)) return textResponse(404, 'Not Found');
+      // Type check and read share one handle (see readRegularFile); bundle files have no size limit.
+      const file = await readRegularFile(realFile, Number.POSITIVE_INFINITY);
+      if (file.kind !== 'ok') return textResponse(404, 'Not Found');
+      const body = request.method === 'HEAD' ? null : file.data;
       const headers: Record<string, string> = {
         'Content-Type': bundleMimeType(realFile),
         'X-Content-Type-Options': 'nosniff',

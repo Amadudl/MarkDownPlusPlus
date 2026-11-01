@@ -77,7 +77,9 @@ arbitrary files** (a document can only _display_ local image files, see
 - File paths must be absolute. The main process enforces this file-access policy
   (`FileService`, `PathRegistry` and `SessionStore` in `src/main/services/`):
   - **Reading, writing, watching and reveal-in-folder require a granted path**, whatever
-    the file's extension. Reads accept UTF-8 text files up to 50 MB only.
+    the file's extension. Reads accept UTF-8 text files up to 50 MB only; the type and size
+    checks and the read use one open file handle, so the checks apply to the file that is
+    read.
   - **Grants** come from user actions only: a file picked in an open or save dialog, a
     file the OS asks MarkDown++ to open (command line, second instance, macOS
     `open-file`), a Markdown/text file dropped onto the window (the path comes from the
@@ -105,9 +107,10 @@ arbitrary files** (a document can only _display_ local image files, see
   JavaScript disabled.
 - Local images are served through the `mpp-file:` protocol, which only serves regular
   files with an image extension (`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`,
-  `.avif`, `.bmp`, `.ico`) of at most 50 MB. A document cannot make the app read local
-  files of any other type through it, but it can reference **any** image file on your
-  local disks, not only images next to the document. On Windows, images on network
+  `.avif`, `.bmp`, `.ico`) of at most 50 MB, checked and read through one open file
+  handle. A document cannot make the app read local files of any other type through it,
+  but it can reference **any** image file on your local disks, not only images next to the
+  document. On Windows, images on network
   (UNC) paths are only loaded from servers that host a file you opened, and device
   paths never, so a document cannot make the app connect to (and send your Windows
   credentials to) an arbitrary server.
