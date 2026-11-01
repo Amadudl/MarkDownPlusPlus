@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-01
+
 ### Fixed
 
 - The outline now lists headings after one-line HTML comments written as `<!-->` or
@@ -276,7 +278,8 @@ The first stable release.
   CodeQL, least-privilege workflows, signing credentials scoped to the packaging step,
   and release packaging without dependency lifecycle scripts.
 
-[Unreleased]: https://github.com/Amadudl/MarkDownPlusPlus/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/Amadudl/MarkDownPlusPlus/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/Amadudl/MarkDownPlusPlus/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/Amadudl/MarkDownPlusPlus/compare/v1.0.5...v1.1.0
 [1.0.5]: https://github.com/Amadudl/MarkDownPlusPlus/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/Amadudl/MarkDownPlusPlus/compare/v1.0.3...v1.0.4
