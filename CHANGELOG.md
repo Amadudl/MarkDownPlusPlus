@@ -15,6 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   element style width. **View → Full Width** (also _Toggle Full Width_ in the command
   palette) switches full width on and back to the previous width of the current session
   (to _Theme_ after a restart).
+- **In-app updates**: **Help → Check for Updates…** (also in the command palette and, on
+  macOS, the app menu) and a background check once per launch, which can be turned off
+  with **Settings → General → Check for updates at startup**. **Download and install**
+  verifies the package against the release's `SHA256SUMS.txt`, then updates the Windows
+  installation silently and restarts, opens the new disk image on macOS or replaces the
+  AppImage on Linux and restarts. Portable builds and `.deb`/`.rpm`/`.tar.gz`
+  installations get a link to the release page. The check is one HTTPS request to
+  GitHub; no telemetry is sent.
 
 ### Changed
 

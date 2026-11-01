@@ -3,6 +3,7 @@ import { clearAdapters } from '@renderer/store/adapters';
 import { INITIAL_DOCUMENTS_STATE, useDocuments } from '@renderer/store/documents';
 import { useSettings } from '@renderer/store/settings';
 import { initialUiState, useUi } from '@renderer/store/ui';
+import { useUpdate } from '@renderer/store/update';
 import { installFakeApi, type FakeApi } from './fakeApi';
 import { fakeAdapters } from './fakeEditor';
 
@@ -11,6 +12,7 @@ export function resetApp(files: Parameters<typeof installFakeApi>[0] = []): Fake
   useDocuments.setState({ ...INITIAL_DOCUMENTS_STATE });
   useUi.setState({ ...initialUiState(), platform: 'linux', prefersDark: true });
   useSettings.setState({ settings: DEFAULT_SETTINGS, loaded: false });
+  useUpdate.setState({ notice: null });
   clearAdapters();
   fakeAdapters.clear();
   document.body.className = '';

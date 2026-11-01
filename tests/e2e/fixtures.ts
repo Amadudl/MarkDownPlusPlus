@@ -245,6 +245,8 @@ export interface LaunchOptions {
   readonly allowConsole?: readonly RegExp[];
   /** Extra command-line switches for Electron/Chromium, e.g. `--no-sandbox`. */
   readonly switches?: readonly string[];
+  /** Extra environment variables, e.g. `MPP_UPDATE_API_URL` for the update stub. */
+  readonly env?: Readonly<Record<string, string>>;
 }
 
 /** A running instance of the application. */
@@ -344,7 +346,7 @@ export const test = base.extend<Fixtures>({
         // users run it (CI allows unprivileged user namespaces, see .github/workflows/ci.yml).
         chromiumSandbox: true,
         cwd: workspace.dir,
-        env: { ...process.env, MPP_USER_DATA_DIR: userDataDir, NODE_ENV: 'test' },
+        env: { ...process.env, ...options.env, MPP_USER_DATA_DIR: userDataDir, NODE_ENV: 'test' },
       });
       const collector = new ConsoleCollector();
       for (const pattern of options.allowConsole ?? []) collector.allow(pattern);

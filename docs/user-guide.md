@@ -21,6 +21,7 @@ This is the complete manual for MarkDown++ 1.0. If you are new, start with the
 - [Export to HTML, PDF and image](#export-to-html-pdf-and-image)
 - [Saving, autosave and session restore](#saving-autosave-and-session-restore)
 - [Files changed by other programs](#files-changed-by-other-programs)
+- [Updates](#updates)
 - [Settings reference](#settings-reference)
 - [Where settings are stored](#where-settings-are-stored)
 - [Troubleshooting](#troubleshooting)
@@ -386,6 +387,35 @@ MarkDown++ watches every open file.
 - If a file is **deleted or moved**, a banner offers **Keep as unsaved** (the tab keeps
   your content; saving writes the file again) or **Close**.
 
+## Updates
+
+MarkDown++ can update itself from its
+[GitHub releases](https://github.com/Amadudl/MarkDownPlusPlus/releases).
+
+- **Check for updates:** **Help → Check for Updates…** (on macOS also **MarkDown++ →
+  Check for Updates…**) or _Check for Updates_ in the command palette. A notice in the
+  bottom-left corner shows the result: a newer version with a link to its release notes,
+  _MarkDown++ is up to date_, or why the check failed.
+- **At startup:** a few seconds after launch MarkDown++ checks once in the background and
+  only shows the notice when a newer version exists; a failed background check stays
+  silent. Turn it off with **Settings → General → Check for updates at startup**.
+- **Download and install** fetches the package for your installation, checks its SHA-256
+  checksum against the `SHA256SUMS.txt` of the same release (a file that does not match
+  is deleted and never opened) and then:
+
+  | Installation                                | What happens                                                                                                                                                               |
+  | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | Windows installer (`-setup.exe`)            | MarkDown++ closes (asking about unsaved changes as usual), installs the update silently into the same folder and starts again. Keeping a document open cancels the update. |
+  | macOS (`.dmg`)                              | The new disk image opens. Quit MarkDown++, drag the new version into **Applications** and replace the old one.                                                             |
+  | Linux AppImage                              | The AppImage file is replaced (it keeps its name and location) and MarkDown++ restarts. If you keep a document open, the new version starts next time.                     |
+  | Windows portable, `.deb`, `.rpm`, `.tar.gz` | These cannot update themselves: **Open download page** opens the release page. Install `.deb`/`.rpm` updates with your package manager.                                    |
+
+- **Later** hides the notice; the next check offers the update again.
+
+The check sends one HTTPS request to `api.github.com` (your IP address and the app
+version in the `User-Agent` reach GitHub, as with any download). MarkDown++ sends no
+telemetry. See [SECURITY.md](../SECURITY.md#updates) for the details.
+
 ## Settings reference
 
 Open **Settings** with `⌘,` / `Ctrl+,` or the gear button in the title bar. Changes apply
@@ -448,13 +478,14 @@ right away.
 
 ### General
 
-| Label                                    | Key                          | Values / default                  | Description                                                                                                                              |
-| ---------------------------------------- | ---------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Confirm before closing unsaved documents | `general.confirmOnClose`     | `true` / `false`, default `true`  | Ask before discarding unsaved changes.                                                                                                   |
-| Show welcome screen                      | `general.showWelcome`        | `true` / `false`, default `true`  | Show the welcome screen (new, open, tutorial, recent files) at startup when no document is open; otherwise start with an empty document. |
-| Show status bar                          | `general.showStatusBar`      | `true` / `false`, default `true`  | Show the status bar.                                                                                                                     |
-| Load remote images                       | `rendering.loadRemoteImages` | `true` / `false`, default `false` | Allow images from `https://` addresses (off by default for privacy). Local images always load.                                           |
-| — (View → Outline)                       | `general.showOutline`        | `true` / `false`, default `false` | Whether the outline sidebar is shown; remembered when you toggle it.                                                                     |
+| Label                                    | Key                                | Values / default                  | Description                                                                                                                              |
+| ---------------------------------------- | ---------------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Confirm before closing unsaved documents | `general.confirmOnClose`           | `true` / `false`, default `true`  | Ask before discarding unsaved changes.                                                                                                   |
+| Show welcome screen                      | `general.showWelcome`              | `true` / `false`, default `true`  | Show the welcome screen (new, open, tutorial, recent files) at startup when no document is open; otherwise start with an empty document. |
+| Show status bar                          | `general.showStatusBar`            | `true` / `false`, default `true`  | Show the status bar.                                                                                                                     |
+| Check for updates at startup             | `general.checkForUpdatesOnStartup` | `true` / `false`, default `true`  | Once per launch, ask GitHub whether a newer version exists. See [updates](#updates). **Help → Check for Updates** works either way.      |
+| Load remote images                       | `rendering.loadRemoteImages`       | `true` / `false`, default `false` | Allow images from `https://` addresses (off by default for privacy). Local images always load.                                           |
+| — (View → Outline)                       | `general.showOutline`              | `true` / `false`, default `false` | Whether the outline sidebar is shown; remembered when you toggle it.                                                                     |
 
 The settings file is validated on load. If it is damaged, invalid sections fall back to
 their defaults instead of preventing MarkDown++ from starting. **Reset to defaults** at the

@@ -53,6 +53,7 @@ export const CommandId = {
   HelpShortcuts: 'help.shortcuts',
   HelpAbout: 'help.about',
   HelpDocumentation: 'help.documentation',
+  HelpCheckForUpdates: 'help.checkForUpdates',
 } as const;
 
 export type CommandIdValue = (typeof CommandId)[keyof typeof CommandId];

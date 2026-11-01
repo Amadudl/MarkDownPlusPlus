@@ -147,6 +147,7 @@ describe('useAppLifecycle', () => {
     await vi.waitFor(() => expect(useUi.getState().dialog).toBe('about'));
     act(() => useUi.getState().setPlatform('darwin'));
     expect(document.body).toHaveClass('platform-darwin');
+    expect(api.listenerCounts()).toMatchObject({ updateAvailable: 1, updateProgress: 1 });
     unmount();
     expect(api.listenerCounts()).toEqual({
       menu: 0,
@@ -154,6 +155,8 @@ describe('useAppLifecycle', () => {
       fileChanged: 0,
       closeRequested: 0,
       settingsChanged: 0,
+      updateAvailable: 0,
+      updateProgress: 0,
     });
   });
 

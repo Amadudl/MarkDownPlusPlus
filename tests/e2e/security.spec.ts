@@ -77,7 +77,7 @@ test.describe('Security', () => {
       );
       return { groups, members, frozen: Object.isFrozen(api) || !Object.isExtensible(api) };
     });
-    expect(surface.groups).toEqual(['app', 'file', 'recent', 'session', 'settings']);
+    expect(surface.groups).toEqual(['app', 'file', 'recent', 'session', 'settings', 'update']);
     for (const line of surface.members) expect(line).not.toMatch(/=(object|string|number)/);
     expect(surface.members.join('\n')).not.toMatch(/ipcRenderer|invoke|send=|on=/);
     expect(surface.frozen).toBe(true);

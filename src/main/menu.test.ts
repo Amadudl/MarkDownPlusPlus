@@ -59,6 +59,7 @@ describe('buildMenuTemplate', () => {
     const appMenu = items(template[0]);
     expect(appMenu.map((item) => item.label ?? item.role ?? item.type)).toEqual([
       'About MarkDown++',
+      'Check for Updates…',
       'separator',
       'Settings…',
       'separator',

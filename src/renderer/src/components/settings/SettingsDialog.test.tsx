@@ -162,15 +162,18 @@ describe('SettingsDialog', () => {
       'Confirm before closing unsaved documents',
       'Show welcome screen',
       'Show status bar',
+      'Check for updates at startup',
       'Load remote images',
     ]) {
       await user.click(screen.getByRole('switch', { name }));
     }
+    expect(screen.getByText(/no telemetry/)).toBeInTheDocument();
     await vi.waitFor(() => {
       expect(settings().general).toMatchObject({
         confirmOnClose: false,
         showWelcome: false,
         showStatusBar: false,
+        checkForUpdatesOnStartup: false,
       });
       // Remote images are off by default; the switch turns them on.
       expect(settings().rendering.loadRemoteImages).toBe(true);

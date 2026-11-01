@@ -14,6 +14,10 @@ import type {
   RecentFile,
   SessionState,
   UnsavedChoice,
+  UpdateCheckResult,
+  UpdateInfo,
+  UpdateInstallOutcome,
+  UpdateProgress,
 } from '@shared/types';
 
 type Listener<T extends unknown[]> = (...args: T) => void;
@@ -50,6 +54,10 @@ export interface FakeApiState {
   unsavedChoice: UnsavedChoice;
   info: AppInfo;
   mtime: number;
+  /** What `update.check()` resolves with. */
+  updateCheck: UpdateCheckResult;
+  /** What `update.install()` resolves with. */
+  updateOutcome: UpdateInstallOutcome;
 }
 
 /** A complete in-memory `MppApi` with `vi.fn` spies and event emitters. */
@@ -61,6 +69,8 @@ export interface FakeApi extends MppApi {
     fileChanged(event: FileChangedEvent): void;
     closeRequested(): void;
     settingsChanged(settings: Settings): void;
+    updateAvailable(update: UpdateInfo): void;
+    updateProgress(progress: UpdateProgress): void;
   };
   readonly listenerCounts: () => Record<string, number>;
 }
@@ -72,6 +82,20 @@ export function fakeFile(
   overrides: Partial<FileReadResult> = {},
 ): FileReadResult {
   return { path, content, lineEnding: 'lf', hasBom: false, mtimeMs: 1000, ...overrides };
+}
+
+/** An update as the main process reports it. */
+export function fakeUpdate(overrides: Partial<UpdateInfo> = {}): UpdateInfo {
+  return {
+    version: '1.1.0',
+    currentVersion: '1.0.0',
+    releaseName: 'MarkDown++ 1.1.0',
+    releaseUrl: 'https://github.com/Amadudl/MarkDownPlusPlus/releases/tag/v1.1.0',
+    publishedAt: '2026-11-01T10:00:00Z',
+    installMode: 'installer',
+    downloadSize: 120 * 1024 * 1024,
+    ...overrides,
+  };
 }
 
 export const FAKE_APP_INFO: AppInfo = {
@@ -97,12 +121,16 @@ export function createFakeApi(files: readonly FileReadResult[] = []): FakeApi {
     unsavedChoice: 'discard',
     info: FAKE_APP_INFO,
     mtime: 1000,
+    updateCheck: { status: 'up-to-date', currentVersion: '1.0.0', latestVersion: '1.0.0' },
+    updateOutcome: 'restarting',
   };
   const menu = emitter<[CommandIdValue, string | undefined]>();
   const open = emitter<[FileReadResult[]]>();
   const changed = emitter<[FileChangedEvent]>();
   const close = emitter<[]>();
   const settingsChanged = emitter<[Settings]>();
+  const updateAvailable = emitter<[UpdateInfo]>();
+  const updateProgress = emitter<[UpdateProgress]>();
 
   const write = (
     path: string,
@@ -194,12 +222,20 @@ export function createFakeApi(files: readonly FileReadResult[] = []): FakeApi {
       onFileChanged: vi.fn((listener: (event: FileChangedEvent) => void) => changed.subscribe(listener)),
       onCloseRequested: vi.fn((listener: () => void) => close.subscribe(listener)),
     },
+    update: {
+      check: vi.fn(() => Promise.resolve(state.updateCheck)),
+      install: vi.fn(() => Promise.resolve(state.updateOutcome)),
+      onAvailable: vi.fn((listener: (update: UpdateInfo) => void) => updateAvailable.subscribe(listener)),
+      onProgress: vi.fn((listener: (progress: UpdateProgress) => void) => updateProgress.subscribe(listener)),
+    },
     emit: {
       menuCommand: (command, arg) => menu.emit(command, arg),
       openFiles: (items) => open.emit(items),
       fileChanged: (event) => changed.emit(event),
       closeRequested: () => close.emit(),
       settingsChanged: (settings) => settingsChanged.emit(settings),
+      updateAvailable: (update) => updateAvailable.emit(update),
+      updateProgress: (progress) => updateProgress.emit(progress),
     },
     listenerCounts: () => ({
       menu: menu.count(),
@@ -207,6 +243,8 @@ export function createFakeApi(files: readonly FileReadResult[] = []): FakeApi {
       fileChanged: changed.count(),
       closeRequested: close.count(),
       settingsChanged: settingsChanged.count(),
+      updateAvailable: updateAvailable.count(),
+      updateProgress: updateProgress.count(),
     }),
   };
   return api;

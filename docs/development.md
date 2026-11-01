@@ -110,11 +110,12 @@ Closing the window stops the dev runner.
 
 Useful environment variables:
 
-| Variable                    | Effect                                                                                                                               |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `MPP_USER_DATA_DIR`         | Absolute path used as the data directory instead of the per-user default. Handy to test with a clean profile (the E2E tests use it). |
-| `MPP_DEV_SERVER_URL`        | Set by the dev runner; ignored in packaged builds.                                                                                   |
-| `ELECTRON_ENABLE_LOGGING=1` | Prints Chromium logs to the terminal.                                                                                                |
+| Variable                    | Effect                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `MPP_USER_DATA_DIR`         | Absolute path used as the data directory instead of the per-user default. Handy to test with a clean profile (the E2E tests use it).                                                                                                                                                                                                                                                                                                       |
+| `MPP_DEV_SERVER_URL`        | Set by the dev runner; ignored in packaged builds.                                                                                                                                                                                                                                                                                                                                                                                         |
+| `MPP_UPDATE_API_URL`        | Test hook: a loopback `http(s)` URL (e.g. `http://127.0.0.1:4100/latest`) answering like GitHub's latest-release endpoint, used by the update check instead of `api.github.com`. Honoured only in unpackaged builds and only for `127.0.0.1`, `localhost` and `[::1]`; packaged builds ignore it. With it set, an unpackaged build also runs the background check at startup (otherwise development builds never check in the background). |
+| `ELECTRON_ENABLE_LOGGING=1` | Prints Chromium logs to the terminal.                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 Example with a throw-away profile:
 
@@ -224,6 +225,9 @@ text and for keys the editors handle themselves.
 temporary workspace, stub native dialogs and `shell.openExternal` (nothing is handed to
 the OS), fail the test on any renderer console error or warning, page error, crash or
 main-process error, and close every launched app (killing it if it does not exit in time).
+No test reaches the network: `tests/e2e/updates.spec.ts` serves release data from a local
+stub through `MPP_UPDATE_API_URL` (passed with `launch({ env })`), and without it the
+built (unpackaged) app never checks for updates in the background.
 
 ## Linting, formatting and type-checking
 

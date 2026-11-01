@@ -10,6 +10,7 @@ import type { IpcDependencies } from './ipc';
 import { FileService } from './services/fileService';
 import { PathRegistry } from './services/pathRegistry';
 import { SessionStore } from './services/sessionStore';
+import { UpdateError } from './services/updateCore';
 
 type Handler = (event: unknown, ...args: unknown[]) => Promise<unknown>;
 type SyncListener = (event: { senderFrame: unknown; returnValue?: unknown }, ...args: unknown[]) => void;
@@ -93,6 +94,12 @@ function setup() {
       isRestorable: vi.fn<(path: string) => boolean>(() => false),
     },
     watcher: { watch: vi.fn(), unwatch: vi.fn() },
+    updates: {
+      check: vi.fn(() =>
+        Promise.resolve({ status: 'up-to-date', currentVersion: '1.0.0', latestVersion: '1.0.0' }),
+      ),
+      install: vi.fn<(version: string) => Promise<string>>(() => Promise.resolve('restarting')),
+    },
     appInfo: {
       name: 'MarkDown++',
       version: '1.0.0',
@@ -154,6 +161,8 @@ describe('registerIpcHandlers', () => {
           IpcChannel.FileChangedOnDisk,
           IpcChannel.CloseRequested,
           IpcChannel.SettingsChanged,
+          IpcChannel.UpdateAvailable,
+          IpcChannel.UpdateProgress,
         ].includes(channel as never) && !SYNC_CHANNELS.includes(channel),
     );
     expect([...mocks.handlers.keys()].sort()).toEqual([...invokeChannels].sort());
@@ -590,5 +599,75 @@ describe('dropped files', () => {
     expect(registry.size).toBe(0);
     expect(grantDroppedFile(registry, linkToMarkdown)).toBe(true);
     expect(registry.has(linkToMarkdown)).toBe(true);
+  });
+});
+
+describe('update channels', () => {
+  it('checks for updates through the update service', async () => {
+    const { deps, invoke } = setup();
+    expect(await invoke(IpcChannel.UpdateCheck)).toEqual({
+      status: 'up-to-date',
+      currentVersion: '1.0.0',
+      latestVersion: '1.0.0',
+    });
+    expect(deps.updates.check).toHaveBeenCalledTimes(1);
+  });
+
+  it('installs only a well-formed version and never takes a URL', async () => {
+    const { deps, invoke, raw } = setup();
+    expect(await invoke(IpcChannel.UpdateInstall, '1.2.3')).toBe('restarting');
+    expect(deps.updates.install).toHaveBeenCalledWith('1.2.3');
+    for (const args of [
+      [],
+      ['https://evil.example/setup.exe'],
+      ['1.2'],
+      ['v1.2.3'],
+      ['1.2.3-beta.1'],
+      ['01.2.3'],
+      [123],
+      ['1.2.3', 'extra'],
+      [`${'1'.repeat(40)}.0.0`],
+    ]) {
+      expect(await raw(IpcChannel.UpdateInstall, ...args)).toMatchObject({
+        ok: false,
+        code: 'invalid-argument',
+      });
+    }
+    expect(await raw(IpcChannel.UpdateCheck, 'unexpected')).toMatchObject({
+      ok: false,
+      code: 'invalid-argument',
+    });
+    expect(deps.updates.install).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects update requests from foreign senders', async () => {
+    const { deps } = setup();
+    for (const channel of [IpcChannel.UpdateCheck, IpcChannel.UpdateInstall]) {
+      const handler = mocks.handlers.get(channel);
+      await expect(handler?.(eventFrom('https://evil.example'), '1.2.3')).rejects.toBeInstanceOf(
+        IpcValidationError,
+      );
+      await expect(
+        handler?.(eventFrom('mpp-app://bundle/index.html', 1, {}), '1.2.3'),
+      ).rejects.toBeInstanceOf(IpcValidationError);
+    }
+    expect(deps.updates.check).not.toHaveBeenCalled();
+    expect(deps.updates.install).not.toHaveBeenCalled();
+  });
+
+  it('reports update failures as network errors without logging them', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      const { deps, raw } = setup();
+      deps.updates.install.mockRejectedValueOnce(new UpdateError('The connection to github.com timed out.'));
+      expect(await raw(IpcChannel.UpdateInstall, '1.2.3')).toEqual({
+        ok: false,
+        code: 'network',
+        message: 'The connection to github.com timed out.',
+      });
+      expect(error).not.toHaveBeenCalled();
+    } finally {
+      error.mockRestore();
+    }
   });
 });

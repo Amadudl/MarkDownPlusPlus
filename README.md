@@ -114,6 +114,8 @@ Your files stay plain `.md` files that work everywhere.
   recent files, your last session); documents cannot reach any other file.
 - **No telemetry**, and remote images are **off by default**, so opening a document can
   never act as a tracking pixel. See [SECURITY.md](SECURITY.md).
+- **Built-in updates**: MarkDown++ checks GitHub for new releases (one HTTPS request at
+  startup, can be turned off) and installs them after verifying their SHA-256 checksum.
 - **Installers and portable builds** for macOS, Windows and Linux.
 
 ## Download and installation

@@ -38,6 +38,8 @@ export type IpcErrorCode =
   | 'busy'
   /** Any other input/output error. */
   | 'io'
+  /** A network request (update check or download) failed or returned unusable data. */
+  | 'network'
   /** An unexpected error inside the main process (a bug). */
   | 'internal';
 
@@ -56,6 +58,7 @@ export const IPC_ERROR_CODES: readonly IpcErrorCode[] = [
   'no-space',
   'busy',
   'io',
+  'network',
   'internal',
 ];
 

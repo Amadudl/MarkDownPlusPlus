@@ -16,6 +16,7 @@ import type { PathRegistry } from './services/pathRegistry';
 import type { RecentFiles } from './services/recentFiles';
 import type { SessionStore } from './services/sessionStore';
 import type { SettingsStore } from './services/settingsStore';
+import type { UpdateService } from './services/updateService';
 import {
   absolutePathSchema,
   describeZodError,
@@ -26,6 +27,7 @@ import {
   saveAsRequestSchema,
   sessionStateSchema,
   settingsPatchSchema,
+  updateVersionSchema,
 } from './validation';
 import { AppWindow } from './window';
 
@@ -37,6 +39,8 @@ export interface IpcDependencies {
   readonly recent: RecentFiles;
   readonly session: SessionStore;
   readonly watcher: FileWatcher;
+  /** The update function; it alone decides what is downloaded (the renderer passes no URL). */
+  readonly updates: Pick<UpdateService, 'check' | 'install'>;
   readonly appInfo: AppInfo;
   readonly devServerUrl: string | null;
   /** Reads and clears the files queued before the renderer was ready. */
@@ -99,6 +103,8 @@ export const ipcArgumentSchemas = {
   [IpcChannel.CloseReady]: noArgs,
   [IpcChannel.CloseCancelled]: noArgs,
   [IpcChannel.TakePendingFiles]: noArgs,
+  [IpcChannel.UpdateCheck]: noArgs,
+  [IpcChannel.UpdateInstall]: z.tuple([updateVersionSchema]),
 } as const;
 
 type InvokeChannel = keyof typeof ipcArgumentSchemas;
@@ -313,6 +319,9 @@ export function registerIpcHandlers(deps: IpcDependencies): void {
     requireWindow(context).markRendererReady();
     return deps.takePendingFiles();
   });
+
+  handle(IpcChannel.UpdateCheck, () => deps.updates.check());
+  handle(IpcChannel.UpdateInstall, (_context, version) => deps.updates.install(version));
 }
 
 /** `invoke` channels handled by {@link registerIpcHandlers} (used by tests to verify completeness). */
