@@ -284,11 +284,19 @@ test.describe('Editor width', () => {
     await waitForImage(image);
     await expect.poll(async () => Math.round((await boxSize(image)).width)).toBe(THEME_WIDTH);
 
+    // A narrower column clamps the image width at once (CSS max-width: 100%), while the
+    // height follows in the next animation frame (ResizeObserver, then requestAnimationFrame
+    // in image-block-width.ts). Width and aspect ratio are therefore checked together until
+    // that frame has run, instead of reading the height as soon as the width matches.
     const expectFollowsColumn = async (): Promise<void> => {
       const column = await textColumnWidth(editor);
-      await expect.poll(async () => Math.abs((await boxSize(image)).width - column)).toBeLessThanOrEqual(1);
-      const { width, height } = await boxSize(image);
-      expect(Math.abs(width / height - 2), `aspect ratio of ${width}x${height}`).toBeLessThan(0.02);
+      await expect
+        .poll(async () => {
+          const { width, height } = await boxSize(image);
+          const fits = Math.abs(width - column) <= 1 && Math.abs(width / height - 2) < 0.02;
+          return fits ? 'follows the column at 2:1' : `${width}x${height} in a column of ${column}`;
+        })
+        .toBe('follows the column at 2:1');
     };
 
     // Full width: the already loaded image grows with the column.
