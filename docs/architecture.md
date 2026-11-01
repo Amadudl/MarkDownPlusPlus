@@ -166,5 +166,5 @@ wraps both the live WYSIWYG editor and exported HTML, so the export looks like t
 - [SECURITY.md](../SECURITY.md) — the complete security model and how to report issues.
 - [theming.md](theming.md) — theme layers, presets and the theme JSON format.
 - [development.md](development.md) — dev loop, debugging, testing and packaging.
-- [AGENTS.md](../AGENTS.md) — step-by-step guides for adding commands, settings, presets
+- [AI_AGENT_RULES.md](AI_AGENT_RULES.md) — step-by-step guides for adding commands, settings, presets
   and IPC channels.

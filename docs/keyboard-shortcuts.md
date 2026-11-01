@@ -112,4 +112,4 @@ Shortcuts are part of the shared contract. To add or change one, edit
 `src/shared/shortcuts.ts` (`SHORTCUTS`, plus `MAC_SHORTCUT_OVERRIDES` when the key
 collides with a macOS menu role such as `⌘H`, `⌘M` or `⌘Q`), update this page (it mirrors
 that file 1:1) and follow
-[How to add a command](../AGENTS.md#how-to-add-a-command) in `AGENTS.md`.
+[How to add a command](AI_AGENT_RULES.md#how-to-add-a-command) in `docs/AI_AGENT_RULES.md`.

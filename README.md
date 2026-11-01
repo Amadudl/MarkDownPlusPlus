@@ -192,7 +192,7 @@ MarkDown++ is built in the open, and contributions of every size are welcome.
 - **Spread it:** star the repository and share MarkDown++ with people who write in Markdown.
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) and our [Code of Conduct](CODE_OF_CONDUCT.md)
-before contributing. AI coding agents must follow [AGENTS.md](AGENTS.md). For help, see
+before contributing. AI coding agents must follow [docs/AI_AGENT_RULES.md](docs/AI_AGENT_RULES.md). For help, see
 [SUPPORT.md](SUPPORT.md).
 
 ## Security

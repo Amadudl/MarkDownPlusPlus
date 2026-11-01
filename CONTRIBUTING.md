@@ -111,7 +111,7 @@ recommended VS Code extensions). Beyond formatting:
 - **JSDoc** on every exported function, type and constant. Explain _why_, not _what_.
 - **Small, cohesive modules** with clear names. Keep React components presentational where
   possible and put logic in stores, commands or plain functions that are easy to test.
-- Respect the architecture boundaries described in [AGENTS.md](AGENTS.md#architecture-boundaries):
+- Respect the architecture boundaries described in [docs/AI_AGENT_RULES.md](docs/AI_AGENT_RULES.md#architecture-boundaries):
   `src/shared` has no Node or DOM APIs, the renderer talks to the main process only through
   `window.mpp`, and every IPC channel is defined in `src/shared/ipc.ts`.
 - Style: single quotes, semicolons, 2-space indentation, print width 110,
@@ -184,7 +184,7 @@ Before requesting a review, make sure that:
 - [ ] there are no new warnings in build, test or runtime output;
 - [ ] documentation and `CHANGELOG.md` are updated;
 - [ ] new dependencies are justified;
-- [ ] the [security rules](AGENTS.md#security-rules) are respected.
+- [ ] the [security rules](docs/AI_AGENT_RULES.md#security-rules) are respected.
 
 The same checklist is part of the PR template.
 
@@ -222,5 +222,5 @@ Built-in presets live in `src/renderer/src/themes/presets/`:
 
 ## AI coding agents
 
-AI agents (and humans using them) must follow [AGENTS.md](AGENTS.md), which summarises
+AI agents (and humans using them) must follow [docs/AI_AGENT_RULES.md](docs/AI_AGENT_RULES.md), which summarises
 the architecture boundaries, commands, security rules and definition of done.
