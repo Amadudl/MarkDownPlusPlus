@@ -133,7 +133,10 @@ The editor width setting (`editor.widthMode`, `editor.customWidth`) is not part 
 theme: `EditorArea` sets `--mpp-editor-column-width` on the editor area
 (`editor/columnWidth.ts`), and the editor stylesheets read
 `var(--mpp-editor-column-width, var(--mpp-el-content-width))`. Exports never contain the
-editor area, so they keep the element style's content width.
+editor area, so they keep the element style's content width. Crepe's image blocks get a
+fixed pixel height from the column width when the image loads; `editor/wysiwyg/image-block-width.ts`
+watches the editable with a `ResizeObserver` and repeats that calculation when the column
+width changes (width setting, window size), keeping the aspect ratio and the resize ratio.
 
 ## Security model
 

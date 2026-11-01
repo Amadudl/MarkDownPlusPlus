@@ -14,6 +14,7 @@ import { SearchListeners } from '../search-listeners';
 import type { EditorAdapter, EditorFactory, EditorOptions, SearchController } from '../types';
 import { runWysiwygCommand, scrollToTopLevelHeading, wysiwygCursorInfo } from './commands';
 import { createFrontMatterPanel } from './front-matter';
+import { observeImageBlockWidths } from './image-block-width';
 import { readImageFileAsDataUrl } from './image-upload';
 import { boundedInlineMath, WYSIWYG_KATEX_OPTIONS } from './inline-math';
 import { createListItemSelectionGuard } from './list-item-selection';
@@ -85,6 +86,8 @@ export const createWysiwygEditor: EditorFactory = (host, options, callbacks) => 
   const current: MutableOptions = { ...options };
   let destroyed = false;
   let view: EditorView | null = null;
+  /** Stops resizing image blocks with the column width (set once the editor is mounted). */
+  let stopImageWidths: (() => void) | null = null;
   /** Markdown returned while the editor is not mounted, and the last value reported through `onChange`. */
   let markdown = options.initialMarkdown;
   /** Content set through `setMarkdown` before the editor was ready. */
@@ -218,6 +221,7 @@ export const createWysiwygEditor: EditorFactory = (host, options, callbacks) => 
     }
     const editorView = editor.ctx.get(editorViewCtx);
     view = editorView;
+    stopImageWidths = observeImageBlockWidths(editorView.dom);
     // Baseline for change detection: the normalised form of the loaded document.
     markdown = serialize();
     suppressChanges = false;
@@ -284,6 +288,8 @@ export const createWysiwygEditor: EditorFactory = (host, options, callbacks) => 
       destroyed = true;
       const wasMounted = view !== null;
       view = null;
+      stopImageWidths?.();
+      stopImageWidths = null;
       frontMatterPanel.destroy();
       host.classList.remove('mpp-document', 'mpp-wysiwyg');
       // Before `ready` settles, the create handler performs the teardown.

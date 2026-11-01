@@ -3,7 +3,6 @@ import type { DomElement, RendererGlobals } from './dom';
 import {
   activePanel,
   expect,
-  openViaDialog,
   pressShortcut,
   runCommand,
   sourceEditor,
@@ -63,6 +62,32 @@ const SPAN_TOLERANCE = 8;
 /** A local SVG far wider than any window, so it is scaled down to the text column. */
 const WIDE_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="4000" height="40" viewBox="0 0 4000 40"><rect width="4000" height="40" fill="#c33"/></svg>';
+
+/** A local SVG with a 2:1 aspect ratio, wider than any window. */
+const RATIO_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="3000" height="1500" viewBox="0 0 3000 1500"><rect width="3000" height="1500" fill="#36c"/></svg>';
+
+/** Rendered size of an element (its border box). */
+function boxSize(element: Locator): Promise<{ width: number; height: number }> {
+  return element.evaluate((node: DomElement) => {
+    const box = (
+      node as unknown as { getBoundingClientRect(): { width: number; height: number } }
+    ).getBoundingClientRect();
+    return { width: box.width, height: box.height };
+  });
+}
+
+/** Resolves once the image has loaded and has a natural size. */
+async function waitForImage(image: Locator): Promise<void> {
+  await expect
+    .poll(() =>
+      image.evaluate((node: DomElement) => {
+        const element = node as unknown as { complete: boolean; naturalWidth: number };
+        return element.complete && element.naturalWidth > 0;
+      }),
+    )
+    .toBe(true);
+}
 
 /** A document with every block type that has to follow the editor width. */
 const BLOCKS_MARKDOWN = [
@@ -212,13 +237,12 @@ test.describe('Editor width', () => {
   }) => {
     await workspace.write('images/wide.svg', WIDE_SVG);
     const path = await workspace.write('blocks.md', BLOCKS_MARKDOWN);
-    const app = await launch({ settings: { editor: { widthMode: 'full' } } });
+    // Opened before the window gets its final size: loaded images follow later width changes.
+    const app = await launch({ files: [path], settings: { editor: { widthMode: 'full' } } });
     const { window } = app;
-    await window.setViewportSize(VIEWPORT);
-    // Opened after the resize: Crepe fixes an image block's height (and so its width) from
-    // the column width at the moment the image loads.
-    await openViaDialog(app, [path]);
     await expect(tab(window, 'blocks.md').first()).toBeVisible();
+    await waitForImage(visualEditor(window).locator('img').first());
+    await window.setViewportSize(VIEWPORT);
     const editor = visualEditor(window);
     await expect(editor).toBeVisible();
 
@@ -228,14 +252,7 @@ test.describe('Editor width', () => {
     expect(column).toBeGreaterThan(THEME_WIDTH + 200);
 
     const image = editor.locator('img').first();
-    await expect
-      .poll(() =>
-        image.evaluate((node: DomElement) => {
-          const element = node as unknown as { complete: boolean; naturalWidth: number };
-          return element.complete && element.naturalWidth > 0;
-        }),
-      )
-      .toBe(true);
+    await waitForImage(image);
 
     const blocks: Readonly<Record<string, Locator>> = {
       'front matter': activePanel(window).locator('.mpp-front-matter'),
@@ -246,10 +263,47 @@ test.describe('Editor width', () => {
     };
     for (const [name, block] of Object.entries(blocks)) {
       await expect(block, name).toBeVisible();
-      const width = await boxWidth(block);
-      expect(Math.abs(width - column), `${name} width ${width} vs column ${column}`).toBeLessThanOrEqual(
-        SPAN_TOLERANCE,
-      );
+      await expect
+        .poll(async () => Math.abs((await boxWidth(block)) - column), `${name} width vs column ${column}`)
+        .toBeLessThanOrEqual(SPAN_TOLERANCE);
     }
+  });
+
+  test('a loaded image follows the column width and keeps its aspect ratio', async ({
+    launch,
+    workspace,
+  }) => {
+    await workspace.write('images/ratio.svg', RATIO_SVG);
+    const path = await workspace.write('picture.md', '# Picture\n\n![Ratio](images/ratio.svg)\n');
+    const app = await launch({ files: [path] });
+    const { window } = app;
+    await window.setViewportSize(VIEWPORT);
+    const editor = visualEditor(window);
+    await expect.poll(() => textColumnWidth(editor)).toBe(THEME_WIDTH);
+    const image = editor.locator('img').first();
+    await waitForImage(image);
+    await expect.poll(async () => Math.round((await boxSize(image)).width)).toBe(THEME_WIDTH);
+
+    const expectFollowsColumn = async (): Promise<void> => {
+      const column = await textColumnWidth(editor);
+      await expect.poll(async () => Math.abs((await boxSize(image)).width - column)).toBeLessThanOrEqual(1);
+      const { width, height } = await boxSize(image);
+      expect(Math.abs(width / height - 2), `aspect ratio of ${width}x${height}`).toBeLessThan(0.02);
+    };
+
+    // Full width: the already loaded image grows with the column.
+    await runCommand(app, 'Toggle Full Width');
+    await expect.poll(() => textColumnWidth(editor)).toBeGreaterThan(THEME_WIDTH + 200);
+    await expectFollowsColumn();
+
+    // A narrower window shrinks it again.
+    await window.setViewportSize({ width: 1200, height: 900 });
+    await expect.poll(() => textColumnWidth(editor)).toBeLessThan(1200 - 2 * 48);
+    await expectFollowsColumn();
+
+    // Back to the theme width.
+    await runCommand(app, 'Toggle Full Width');
+    await expect.poll(() => textColumnWidth(editor)).toBe(THEME_WIDTH);
+    await expectFollowsColumn();
   });
 });
