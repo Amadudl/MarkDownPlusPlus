@@ -168,7 +168,10 @@ export function ElementTuning({
             onChange={(paragraphSpacing) => set('typography', { paragraphSpacing })}
           />
         </SettingRow>
-        <SettingRow label="Content width">
+        <SettingRow
+          label="Content width"
+          description="Used by exports, and by the editor while Editor width is Theme."
+        >
           <NumberField
             label="Content width"
             value={t.contentWidth}

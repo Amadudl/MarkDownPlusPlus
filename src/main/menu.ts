@@ -157,6 +157,7 @@ export function buildMenuTemplate(context: MenuContext): Item[] {
       command('Command Palette…', CommandId.ViewCommandPalette),
       command('Outline', CommandId.ViewToggleOutline),
       command('Focus Mode', CommandId.ViewToggleFocusMode),
+      command('Full Width', CommandId.ViewToggleFullWidth),
       separator,
       command('Next Tab', CommandId.ViewNextTab),
       command('Previous Tab', CommandId.ViewPreviousTab),

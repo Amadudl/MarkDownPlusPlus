@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import {
   applySettingsPatch,
+  CUSTOM_WIDTH_MAX,
+  CUSTOM_WIDTH_MIN,
   DEFAULT_SETTINGS,
+  EDITOR_WIDTH_MODES,
   parseSettings,
   SETTINGS_VERSION,
   type Settings,
@@ -106,6 +109,57 @@ describe('parseSettings', () => {
   it('round-trips its own output', () => {
     const custom: Settings = applySettingsPatch(DEFAULT_SETTINGS, { general: { showOutline: true } });
     expect(parseSettings(JSON.parse(JSON.stringify(custom)))).toEqual(custom);
+  });
+});
+
+describe('editor width settings', () => {
+  it('default to the theme width with a 1200 px custom width', () => {
+    expect(DEFAULT_SETTINGS.editor.widthMode).toBe('theme');
+    expect(DEFAULT_SETTINGS.editor.customWidth).toBe(1200);
+    expect(EDITOR_WIDTH_MODES).toEqual(['theme', 'full', 'custom']);
+  });
+
+  it('keep settings files written before the width settings existed valid', () => {
+    const legacy = { version: SETTINGS_VERSION, editor: { tabSize: 4, wordWrap: false } };
+    const parsed = parseSettings(legacy);
+    expect(parsed.editor).toMatchObject({
+      tabSize: 4,
+      wordWrap: false,
+      widthMode: 'theme',
+      customWidth: 1200,
+    });
+  });
+
+  it('accept every mode and the bounds of the custom width', () => {
+    for (const widthMode of EDITOR_WIDTH_MODES) {
+      expect(applySettingsPatch(DEFAULT_SETTINGS, { editor: { widthMode } }).editor.widthMode).toBe(
+        widthMode,
+      );
+    }
+    for (const customWidth of [CUSTOM_WIDTH_MIN, CUSTOM_WIDTH_MAX]) {
+      expect(applySettingsPatch(DEFAULT_SETTINGS, { editor: { customWidth } }).editor.customWidth).toBe(
+        customWidth,
+      );
+    }
+  });
+
+  it('reject unknown modes and out-of-range or fractional widths', () => {
+    const invalid = [
+      { widthMode: 'wide' },
+      { customWidth: CUSTOM_WIDTH_MIN - 1 },
+      { customWidth: CUSTOM_WIDTH_MAX + 1 },
+      { customWidth: 1000.5 },
+    ] as unknown as Parameters<typeof applySettingsPatch>[1]['editor'][];
+    for (const editor of invalid) {
+      expect(() => applySettingsPatch(DEFAULT_SETTINGS, { editor })).toThrow(z.ZodError);
+    }
+  });
+
+  it('fall back field by field when a persisted width value is damaged', () => {
+    const parsed = parseSettings({ editor: { widthMode: 'huge', customWidth: 99_999, tabSize: 4 } });
+    expect(parsed.editor).toMatchObject({ widthMode: 'theme', customWidth: 1200, tabSize: 4 });
+    const kept = parseSettings({ editor: { widthMode: 'custom', customWidth: 'wide' } });
+    expect(kept.editor).toMatchObject({ widthMode: 'custom', customWidth: 1200 });
   });
 });
 

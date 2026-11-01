@@ -1,4 +1,5 @@
 import { useCallback, useMemo, type CSSProperties, type JSX } from 'react';
+import { COLUMN_WIDTH_VAR, columnWidthValue } from '@renderer/editor/columnWidth';
 import type { CursorInfo, EditorAdapter } from '@renderer/editor/types';
 import { EditorHost, type EditorHostProps } from '@renderer/editor/EditorHost';
 import { setAdapter } from '@renderer/store/adapters';
@@ -34,9 +35,11 @@ export function EditorArea(): JSX.Element {
     [editor.spellcheck, editor.tabSize, editor.wordWrap, editor.sourceLineNumbers, loadRemoteImages],
   );
 
+  const columnWidth = columnWidthValue(editor);
   const style = {
     '--mpp-source-font-family': resolveSourceFont(editor.sourceFontFamily),
     '--mpp-source-font-size': `${editor.sourceFontSize}px`,
+    ...(columnWidth === undefined ? {} : { [COLUMN_WIDTH_VAR]: columnWidth }),
   } as CSSProperties;
 
   const onChange = useCallback((docId: string, markdown: string) => {
@@ -50,7 +53,7 @@ export function EditorArea(): JSX.Element {
   }, []);
 
   return (
-    <div className="editor-area" style={style}>
+    <div className="editor-area" data-width-mode={editor.widthMode} style={style}>
       {documents.map((doc) => {
         const active = doc.id === activeId;
         return (

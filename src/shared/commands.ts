@@ -30,6 +30,7 @@ export const CommandId = {
   ViewZoomReset: 'view.zoomReset',
   ViewToggleFocusMode: 'view.toggleFocusMode',
   ViewToggleOutline: 'view.toggleOutline',
+  ViewToggleFullWidth: 'view.toggleFullWidth',
   ViewNextTab: 'view.nextTab',
   ViewPreviousTab: 'view.previousTab',
   FormatBold: 'format.bold',

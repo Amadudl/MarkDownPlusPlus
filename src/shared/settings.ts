@@ -29,8 +29,23 @@ export const renderingSettingsSchema = z.object({
   loadRemoteImages: z.boolean().default(false),
 });
 
+/** How wide the text column of both editors is (see `editor.widthMode`). */
+export const EDITOR_WIDTH_MODES = ['theme', 'full', 'custom'] as const;
+
+/** Smallest and largest custom text column width in px (`editor.customWidth`). */
+export const CUSTOM_WIDTH_MIN = 480;
+export const CUSTOM_WIDTH_MAX = 4000;
+
 export const editorSettingsSchema = z.object({
   defaultMode: z.enum(['wysiwyg', 'source']).default('wysiwyg'),
+  /**
+   * Width of the text column in Visual mode and Markdown mode: `theme` uses the content
+   * width of the active element style, `full` spans the whole editor area (minus the
+   * normal gutter) and `custom` caps it at `customWidth`. Exports always use the theme width.
+   */
+  widthMode: z.enum(EDITOR_WIDTH_MODES).default('theme'),
+  /** Maximum text column width in px when `widthMode` is `custom`; never wider than the window. */
+  customWidth: z.number().int().min(CUSTOM_WIDTH_MIN).max(CUSTOM_WIDTH_MAX).default(1200),
   sourceFontFamily: z
     .string()
     .min(1)
@@ -69,6 +84,8 @@ export type AppearanceSettings = Settings['appearance'];
 export type RenderingSettings = Settings['rendering'];
 export type EditorSettings = Settings['editor'];
 export type GeneralSettings = Settings['general'];
+/** A value of `editor.widthMode`. */
+export type EditorWidthMode = EditorSettings['widthMode'];
 
 /** A partial update: each section may be partially specified. */
 export type SettingsPatch = {

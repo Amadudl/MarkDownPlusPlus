@@ -52,7 +52,8 @@
 
 .mpp-document .milkdown .ProseMirror {
   box-sizing: border-box;
-  max-width: calc(var(--mpp-el-content-width) + 2 * var(--mpp-doc-gutter));
+  /* --mpp-editor-column-width: the editor width setting (EditorArea); unset = theme width. */
+  max-width: calc(var(--mpp-editor-column-width, var(--mpp-el-content-width)) + 2 * var(--mpp-doc-gutter));
   min-height: 100%;
   margin-inline: auto;
   padding: 56px var(--mpp-doc-gutter) 40vh;

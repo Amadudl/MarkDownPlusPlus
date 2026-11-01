@@ -31,8 +31,9 @@
 }
 
 /*
- * Visual mode: the theme's Crepe bridge centres the reading column
- * (width from --mpp-el-content-width); the host only has to fill the panel.
+ * Visual mode: the theme's Crepe bridge centres the reading column (width from the editor
+ * width setting, --mpp-editor-column-width, falling back to the theme's
+ * --mpp-el-content-width); the host only has to fill the panel.
  */
 .editor-surface .mpp-editor-host,
 .editor-surface .mpp-editor-mount {
@@ -58,7 +59,7 @@
 
 /*
  * Markdown mode with word wrap: lines use the readable column width of Visual mode
- * (--mpp-el-content-width plus the 16px line padding on each side), centred together
+ * (the column width plus the 16px line padding on each side), centred together
  * with the line-number gutter, so switching modes does not move the text sideways.
  * Without word wrap the content keeps the full width and scrolls horizontally.
  */
@@ -67,7 +68,7 @@
 }
 
 .editor-panel[data-mode='source'] .cm-content.cm-lineWrapping {
-  max-width: calc(var(--mpp-el-content-width) + 32px);
+  max-width: calc(var(--mpp-editor-column-width, var(--mpp-el-content-width)) + 32px);
 }
 
 /*

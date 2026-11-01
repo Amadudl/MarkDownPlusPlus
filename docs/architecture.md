@@ -129,6 +129,12 @@ custom property (`uiTheme.colors.surfaceElevated` → `--mpp-ui-surface-elevated
 (e.g. `data-mpp-quote="card"`). All element CSS targets the `.mpp-document` container, which
 wraps both the live WYSIWYG editor and exported HTML, so the export looks like the editor.
 
+The editor width setting (`editor.widthMode`, `editor.customWidth`) is not part of the
+theme: `EditorArea` sets `--mpp-editor-column-width` on the editor area
+(`editor/columnWidth.ts`), and the editor stylesheets read
+`var(--mpp-editor-column-width, var(--mpp-el-content-width))`. Exports never contain the
+editor area, so they keep the element style's content width.
+
 ## Security model
 
 - Renderer is sandboxed, context-isolated and has no Node access.

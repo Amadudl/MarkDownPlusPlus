@@ -46,6 +46,21 @@ describe('EditorArea', () => {
     expect(area.style.getPropertyValue('--mpp-source-font-size')).toBe('16px');
   });
 
+  it('sets the text column width from the editor width settings', () => {
+    docs().newDocument({ mode: 'wysiwyg', lineEnding: 'lf' });
+    const { container } = render(<EditorArea />);
+    const area = (): HTMLElement => container.querySelector<HTMLElement>('.editor-area')!;
+    expect(area()).toHaveAttribute('data-width-mode', 'theme');
+    expect(area().style.getPropertyValue('--mpp-editor-column-width')).toBe('');
+    act(() => setSettings(api, { editor: { widthMode: 'full' } }));
+    expect(area()).toHaveAttribute('data-width-mode', 'full');
+    expect(area().style.getPropertyValue('--mpp-editor-column-width')).toBe('100%');
+    act(() => setSettings(api, { editor: { widthMode: 'custom', customWidth: 1640 } }));
+    expect(area().style.getPropertyValue('--mpp-editor-column-width')).toBe('1640px');
+    act(() => setSettings(api, { editor: { widthMode: 'theme' } }));
+    expect(area().style.getPropertyValue('--mpp-editor-column-width')).toBe('');
+  });
+
   it('renders the 1.0.0 default source font with the bundled font', () => {
     setSettings(api, { editor: { sourceFontFamily: LEGACY_DEFAULT_SOURCE_FONT } });
     docs().newDocument({ mode: 'source', lineEnding: 'lf' });
