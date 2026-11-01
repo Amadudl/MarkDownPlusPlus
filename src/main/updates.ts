@@ -82,9 +82,10 @@ export function createUpdateService(api: UpdateApiLocation, hooks: UpdateHooks):
     }),
     httpGet: createHttpGet(() => session.fromPartition(UPDATE_SESSION_PARTITION)),
     apiUrl: api.url,
-    // Per-user temporary folder (Windows %TEMP%, macOS $TMPDIR); the AppImage is
-    // downloaded next to itself instead, see UpdateService.
-    downloadDir: join(app.getPath('temp'), 'MarkDownPlusPlus-updates'),
+    // A folder only this app uses, inside its user data (not the shared %TEMP% or
+    // $TMPDIR, where other programs of the user create and replace files). The
+    // AppImage is downloaded next to itself instead, see UpdateService.
+    downloadDir: join(app.getPath('userData'), 'updates'),
     userAgent: `MarkDownPlusPlus/${version} (+https://github.com/Amadudl/MarkDownPlusPlus)`,
     openPath: (path) => shell.openPath(path),
     openExternal: openExternalSafely,

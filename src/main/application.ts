@@ -111,6 +111,8 @@ export class Application {
       requestQuit: () => app.quit(),
     });
     this.updates = updates;
+    // Verified setups and disk images of earlier runs are not needed any more.
+    void updates.removeLeftoverDownloads();
     registerIpcHandlers({
       ...services,
       updates,

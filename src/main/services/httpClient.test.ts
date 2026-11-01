@@ -1,9 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { HttpGetOptions } from './httpClient';
+import type { FlowControl, HttpGetOptions } from './httpClient';
 
 const h = await vi.hoisted(async () => {
   const { EventEmitter } = await import('node:events');
   class FakeResponse extends EventEmitter {
+    // Electron's IncomingMessage is a Node Readable at runtime.
+    readonly pause = vi.fn();
+    readonly resume = vi.fn();
     constructor(
       readonly statusCode: number,
       readonly headers: Record<string, string | string[]>,
@@ -30,7 +33,7 @@ const h = await vi.hoisted(async () => {
       this.emit('redirect', 302, 'GET', url, {});
     }
   }
-  return { requests: [] as FakeRequest[], FakeRequest };
+  return { requests: [] as FakeRequest[], FakeRequest, FakeResponse };
 });
 
 vi.mock('electron', () => ({
@@ -204,6 +207,123 @@ describe('createHttpGet', () => {
     response.emit('end');
     await expect(slow).resolves.toBeUndefined();
     await vi.advanceTimersByTimeAsync(5000);
+  });
+
+  it('enforces an overall deadline even while data keeps trickling in', async () => {
+    vi.useFakeTimers();
+    let settled = false;
+    const trickle = httpGet(URL_A, options({ maxBytes: 1000, deadlineMs: 3000 }));
+    const result = trickle.then(
+      () => {
+        settled = true;
+      },
+      (error: unknown) => {
+        settled = true;
+        throw error;
+      },
+    );
+    const checked = expect(result).rejects.toThrow('github.com did not finish within 3 s.');
+    const request = lastRequest();
+    const response = request.respond(200);
+    // One byte every 900 ms never trips the 1000 ms idle timeout.
+    for (let index = 0; index < 3; index += 1) {
+      await vi.advanceTimersByTimeAsync(900);
+      response.emit('data', Buffer.alloc(1));
+    }
+    expect(settled).toBe(false);
+    await vi.advanceTimersByTimeAsync(300);
+    await checked;
+    expect(request.abort).toHaveBeenCalled();
+
+    // A request that finishes in time clears the deadline.
+    const quick = httpGet(URL_A, options({ deadlineMs: 3000 }));
+    lastRequest().respond(200).emit('end');
+    await expect(quick).resolves.toBeUndefined();
+    await vi.advanceTimersByTimeAsync(5000);
+  });
+
+  it('lets the consumer pause the response without tripping the idle timeout', async () => {
+    vi.useFakeTimers();
+    let flow: FlowControl | undefined;
+    const done = httpGet(
+      URL_A,
+      options({
+        maxBytes: 100,
+        onData: (_chunk, control) => {
+          flow = control;
+          control.pause();
+        },
+      }),
+    );
+    const response = lastRequest().respond(200);
+    response.emit('data', Buffer.alloc(1));
+    expect(response.pause).toHaveBeenCalledTimes(1);
+    // A slow disk may hold the response far longer than the idle timeout.
+    await vi.advanceTimersByTimeAsync(10_000);
+    flow?.resume();
+    expect(response.resume).toHaveBeenCalledTimes(1);
+    response.emit('end');
+    await expect(done).resolves.toBeUndefined();
+
+    // After resuming, the idle timeout applies again.
+    const stalled = httpGet(
+      URL_A,
+      options({
+        maxBytes: 100,
+        onData: (_chunk, control) => {
+          control.pause();
+          control.resume();
+        },
+      }),
+    );
+    const stalledResult = expect(stalled).rejects.toThrow('timed out');
+    lastRequest().respond(200).emit('data', Buffer.alloc(1));
+    await vi.advanceTimersByTimeAsync(1000);
+    await stalledResult;
+  });
+
+  it('ignores flow control that does not apply', async () => {
+    const controls: FlowControl[] = [];
+    const done = httpGet(URL_A, options({ onData: (_chunk, control) => controls.push(control) }));
+    const response = lastRequest().respond(200);
+    response.emit('data', Buffer.alloc(1));
+    const [flow] = controls;
+    if (flow === undefined) throw new Error('flow control expected');
+    // Resuming a response that is not paused does nothing.
+    flow.resume();
+    expect(response.resume).not.toHaveBeenCalled();
+    response.emit('end');
+    await done;
+    // After the request settled, pausing does nothing either.
+    flow.pause();
+    expect(response.pause).not.toHaveBeenCalled();
+
+    // Resuming after the request failed while paused does nothing.
+    const pausedControls: FlowControl[] = [];
+    const failed = httpGet(
+      URL_A,
+      options({
+        onData: (_chunk, control) => {
+          pausedControls.push(control);
+          control.pause();
+        },
+      }),
+    );
+    const failedResponse = lastRequest().respond(200);
+    failedResponse.emit('data', Buffer.alloc(1));
+    failedResponse.emit('aborted');
+    await expect(failed).rejects.toThrow('interrupted');
+    pausedControls[0]?.resume();
+    expect(failedResponse.resume).not.toHaveBeenCalled();
+
+    // A response without pause/resume (not a Readable) keeps flowing.
+    const plain = httpGet(URL_A, options({ onData: (_chunk, control) => control.pause() }));
+    const plainResponse = new h.FakeResponse(200, {});
+    Reflect.deleteProperty(plainResponse, 'pause');
+    lastRequest().emit('response', plainResponse);
+    plainResponse.emit('data', Buffer.alloc(1));
+    plainResponse.emit('end');
+    await expect(plain).resolves.toBeUndefined();
   });
 
   it('reports network, stream and abort errors', async () => {

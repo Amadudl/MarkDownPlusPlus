@@ -2,22 +2,38 @@
  * Minimal HTTP GET on top of Electron's `net` module (Chromium's network stack,
  * so the system proxy configuration applies) for the update function. Every
  * redirect is checked against an allowlist before it is followed, the body is
- * size-limited and streamed, and a request without progress times out.
+ * size-limited and streamed (with backpressure), a request without progress
+ * times out, and an optional overall deadline bounds the whole request.
  */
 import { net, type ClientRequest, type IncomingMessage, type Session } from 'electron';
 import { UpdateError } from './updateCore';
 
+/**
+ * Lets the consumer of a response apply backpressure. While paused, the
+ * response delivers no data and the idle timeout is suspended (the overall
+ * deadline keeps running).
+ */
+export interface FlowControl {
+  pause(): void;
+  resume(): void;
+}
+
 /** Options of one {@link HttpGet} request. */
 export interface HttpGetOptions {
   readonly headers: Readonly<Record<string, string>>;
-  /** Aborts when the server sends nothing (headers, redirect or data) for this long. */
+  /**
+   * Idle timeout: aborts when the server sends nothing (headers, redirect or
+   * data) for this long. Re-armed by every event, so it does not limit the total time.
+   */
   readonly timeoutMs: number;
+  /** Overall time limit of the whole request, from start to the last byte; none if omitted. */
+  readonly deadlineMs?: number;
   /** Largest accepted body; a larger `Content-Length` or body aborts the request. */
   readonly maxBytes: number;
   /** Decides whether the URL (and every redirect target) may be requested. */
   readonly isAllowedUrl: (url: URL) => boolean;
   /** Receives the body chunk by chunk. A throwing callback aborts the request. */
-  readonly onData: (chunk: Buffer) => void;
+  readonly onData: (chunk: Buffer, flow: FlowControl) => void;
 }
 
 /**
@@ -43,6 +59,20 @@ function headerValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
+/**
+ * Electron's `IncomingMessage` is a Node `Readable` at runtime (pausing it stops
+ * reading from the network), but its type declarations omit `pause`/`resume`.
+ */
+interface Pausable {
+  pause(): unknown;
+  resume(): unknown;
+}
+
+function isPausable(value: object): value is Pausable {
+  const candidate = value as Partial<Record<keyof Pausable, unknown>>;
+  return typeof candidate.pause === 'function' && typeof candidate.resume === 'function';
+}
+
 function contentLengthOf(response: IncomingMessage): number | null {
   const value = headerValue(response.headers['content-length']);
   return value !== undefined && /^\d{1,15}$/.test(value) ? Number(value) : null;
@@ -64,6 +94,7 @@ export function createHttpGet(getSession: () => Session): HttpGet {
       const host = initial.host;
       let settled = false;
       let timer: NodeJS.Timeout | undefined;
+      let deadline: NodeJS.Timeout | undefined;
       const current: ClientRequest = net.request({
         url,
         method: 'GET',
@@ -77,6 +108,7 @@ export function createHttpGet(getSession: () => Session): HttpGet {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
+        clearTimeout(deadline);
         current.abort();
         reject(error);
       };
@@ -84,6 +116,7 @@ export function createHttpGet(getSession: () => Session): HttpGet {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
+        clearTimeout(deadline);
         resolve();
       };
       const arm = (): void => {
@@ -123,6 +156,22 @@ export function createHttpGet(getSession: () => Session): HttpGet {
           return;
         }
         let received = 0;
+        let paused = false;
+        const pausable = isPausable(response) ? response : null;
+        const flow: FlowControl = {
+          pause: () => {
+            if (settled || paused || pausable === null) return;
+            paused = true;
+            clearTimeout(timer);
+            pausable.pause();
+          },
+          resume: () => {
+            if (settled || !paused) return;
+            paused = false;
+            arm();
+            pausable?.resume();
+          },
+        };
         arm();
         response.on('data', (chunk) => {
           if (settled) return;
@@ -131,9 +180,9 @@ export function createHttpGet(getSession: () => Session): HttpGet {
             fail(new UpdateError(`The file from ${host} is larger than expected.`));
             return;
           }
-          arm();
+          if (!paused) arm();
           try {
-            options.onData(chunk);
+            options.onData(chunk, flow);
           } catch (error) {
             fail(error instanceof Error ? error : new Error(String(error)));
           }
@@ -155,6 +204,12 @@ export function createHttpGet(getSession: () => Session): HttpGet {
         fail(new UpdateError(`Could not connect to ${host}: ${error.message}`));
       });
 
+      if (options.deadlineMs !== undefined) {
+        const limit = options.deadlineMs;
+        deadline = setTimeout(() => {
+          fail(new UpdateError(`${host} did not finish within ${String(Math.round(limit / 1000))} s.`));
+        }, limit);
+      }
       arm();
       current.end();
     });

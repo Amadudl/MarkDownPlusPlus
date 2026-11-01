@@ -5,7 +5,7 @@
  * are ever opened or executed; everything else is deleted.
  */
 import { createHash, randomBytes } from 'node:crypto';
-import { chmodSync, renameSync } from 'node:fs';
+import { chmodSync, closeSync, openSync, readSync, renameSync, rmSync } from 'node:fs';
 import { mkdir, open, readdir, rm, type FileHandle } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import type { UpdateCheckResult, UpdateInfo, UpdateInstallOutcome, UpdateProgress } from '../../shared/types';
@@ -25,10 +25,16 @@ import {
   type UpdatePlan,
 } from './updateCore';
 
-/** Time limit of the release check (no answer within this time aborts it). */
+/** The release check aborts when GitHub sends nothing for this long (idle timeout). */
 export const CHECK_TIMEOUT_MS = 10_000;
+/** Overall time limit of the release check and of the `SHA256SUMS.txt` download. */
+export const CHECK_DEADLINE_MS = 30_000;
 /** A download aborts when no data arrived for this long. */
 export const DOWNLOAD_IDLE_TIMEOUT_MS = 30_000;
+/** The download is paused while more than this many received bytes wait to be written. */
+export const WRITE_BACKLOG_LIMIT_BYTES = 4 * 1024 * 1024;
+/** Read size when hashing a file from disk. */
+const HASH_READ_BYTES = 1024 * 1024;
 
 /**
  * Arguments of the Windows installer: `/S` installs silently into the existing
@@ -38,30 +44,93 @@ export const DOWNLOAD_IDLE_TIMEOUT_MS = 30_000;
  */
 export const WINDOWS_INSTALLER_ARGS: readonly string[] = ['--updated', '/S', '--force-run'];
 
-/** Downloads in progress or left over by an earlier attempt (`tmp_<16 hex>_MarkDownPlusPlus-…`). */
-const DOWNLOAD_FILE_PATTERN = /^tmp_[0-9a-f]{16}_MarkDownPlusPlus-/;
+/**
+ * Exact names of the files the updater downloads:
+ * `tmp_<16 hex>_MarkDownPlusPlus-<version>-<package>` for every package it can install.
+ */
+const DOWNLOAD_FILE_PATTERN =
+  /^tmp_[0-9a-f]{16}_MarkDownPlusPlus-\d+\.\d+\.\d+-(?:win-(?:x64|arm64)-setup\.exe|mac-(?:x64|arm64)\.dmg|linux-(?:x86_64|arm64)\.AppImage)$/;
+
+/** SHA-256 (lower-case hex) of a file, read from disk. */
+async function hashFile(path: string): Promise<string> {
+  const hash = createHash('sha256');
+  const handle = await open(path, 'r');
+  try {
+    const buffer = Buffer.alloc(HASH_READ_BYTES);
+    for (;;) {
+      const { bytesRead } = await handle.read(buffer, 0, buffer.length, null);
+      if (bytesRead === 0) break;
+      hash.update(buffer.subarray(0, bytesRead));
+    }
+  } finally {
+    await handle.close();
+  }
+  return hash.digest('hex');
+}
 
 /**
- * Writes chunks to a file in order without making the network callback wait,
- * and remembers the first write error (reported by the next write and by
- * {@link FileSink.close}).
+ * SHA-256 of a file, read synchronously. Used on `will-quit`, right before the
+ * verified file is executed or moved, where no asynchronous work can run.
+ */
+function hashFileSync(path: string): string {
+  const hash = createHash('sha256');
+  const descriptor = openSync(path, 'r');
+  try {
+    const buffer = Buffer.alloc(HASH_READ_BYTES);
+    for (;;) {
+      const bytesRead = readSync(descriptor, buffer, 0, buffer.length, null);
+      if (bytesRead === 0) break;
+      hash.update(buffer.subarray(0, bytesRead));
+    }
+  } finally {
+    closeSync(descriptor);
+  }
+  return hash.digest('hex');
+}
+
+/**
+ * Writes chunks to a file in order without making the network callback wait.
+ * Every chunk is written completely (a short write is continued), the first
+ * write error is remembered (reported by the next write and by
+ * {@link FileSink.close}), and {@link FileSink.write} reports when the backlog
+ * of unwritten bytes exceeds `backlogLimit`, so the caller can pause the source.
  */
 export class FileSink {
   private queue: Promise<void> = Promise.resolve();
   private failure: Error | null = null;
+  private backlog = 0;
+  private waiters: (() => void)[] = [];
 
-  constructor(private readonly handle: FileHandle) {}
+  constructor(
+    private readonly handle: FileHandle,
+    private readonly backlogLimit: number = WRITE_BACKLOG_LIMIT_BYTES,
+  ) {}
 
-  /** Queues `chunk`; throws the first write error that already happened. */
-  write(chunk: Buffer): void {
+  /**
+   * Queues `chunk`; throws the first write error that already happened.
+   * @returns false when the backlog now exceeds the limit (pause the source until {@link drained}).
+   */
+  write(chunk: Buffer): boolean {
     if (this.failure !== null) throw this.failure;
+    this.backlog += chunk.length;
     this.queue = this.queue
       .then(async () => {
-        await this.handle.write(chunk);
+        if (this.failure === null) await this.writeFully(chunk);
       })
       .catch((error: unknown) => {
         this.failure ??= error instanceof Error ? error : new Error(String(error));
+      })
+      .finally(() => {
+        this.backlog -= chunk.length;
+        if (this.backlog <= this.backlogLimit / 2) this.wakeWaiters();
       });
+    return this.backlog <= this.backlogLimit;
+  }
+
+  /** Resolves once the backlog dropped to half the limit or less (immediately if it already is). */
+  drained(): Promise<void> {
+    if (this.backlog <= this.backlogLimit / 2) return Promise.resolve();
+    return new Promise((resolve) => this.waiters.push(resolve));
   }
 
   /** Waits for all queued writes, closes the file and throws the first write error, if any. */
@@ -69,6 +138,20 @@ export class FileSink {
     await this.queue;
     await this.handle.close();
     if (this.failure !== null) throw this.failure;
+  }
+
+  private async writeFully(chunk: Buffer): Promise<void> {
+    let offset = 0;
+    while (offset < chunk.length) {
+      const { bytesWritten } = await this.handle.write(chunk, offset, chunk.length - offset);
+      if (bytesWritten <= 0)
+        throw new UpdateError('The update file could not be saved: the disk wrote no data.');
+      offset += bytesWritten;
+    }
+  }
+
+  private wakeWaiters(): void {
+    for (const resolve of this.waiters.splice(0)) resolve();
   }
 }
 
@@ -99,6 +182,8 @@ export interface UpdateServiceOptions {
   readonly defer?: (callback: () => void) => void;
   /** Random hex id for download file names (16 hex digits). */
   readonly randomId?: () => string;
+  /** Creates a new download file (default: `open(path, 'wx', 0o600)`). */
+  readonly openFile?: (path: string) => Promise<FileHandle>;
 }
 
 /** The result of the last successful check that found an update. */
@@ -112,6 +197,12 @@ interface KnownUpdate {
 interface PendingInstall {
   readonly run: () => void;
   readonly file: string;
+  /** The published checksum the file matched; checked again right before `run`. */
+  readonly sha256: string;
+}
+
+function isErrorCode(error: unknown, code: string): boolean {
+  return error instanceof Error && (error as NodeJS.ErrnoException).code === code;
 }
 
 /** Shown when the app did not quit, so a pending install was dropped. */
@@ -125,10 +216,12 @@ export class UpdateService {
   private pending: PendingInstall | null = null;
   private readonly defer: (callback: () => void) => void;
   private readonly randomId: () => string;
+  private readonly openFile: (path: string) => Promise<FileHandle>;
 
   constructor(private readonly options: UpdateServiceOptions) {
     this.defer = options.defer ?? ((callback) => void setTimeout(callback, 0));
     this.randomId = options.randomId ?? (() => randomBytes(8).toString('hex'));
+    this.openFile = options.openFile ?? ((path) => open(path, 'wx', 0o600));
   }
 
   /** True when an install waits for the app to quit. */
@@ -150,6 +243,7 @@ export class UpdateService {
         'User-Agent': this.options.userAgent,
       },
       timeoutMs: CHECK_TIMEOUT_MS,
+      deadlineMs: CHECK_DEADLINE_MS,
       maxBytes: MAX_RELEASE_JSON_BYTES,
       isAllowedUrl: (url) => url.origin === apiOrigin && url.username === '' && url.password === '',
     });
@@ -201,15 +295,50 @@ export class UpdateService {
 
   /**
    * Runs the work an install left for the moment the app quits (start the
-   * Windows installer, relaunch the replaced AppImage). Called on `will-quit`.
+   * Windows installer, replace and relaunch the AppImage). Called on `will-quit`.
+   * The verified file is hashed again right before it is used; a file that
+   * changed or vanished since the verification is deleted and never used.
+   * Failures are logged: the app is quitting and has no window left to show them.
    * @returns true if there was such work.
    */
   runPendingInstall(): boolean {
     const pending = this.pending;
     this.pending = null;
     if (pending === null) return false;
-    pending.run();
+    let actual: string;
+    try {
+      actual = hashFileSync(pending.file);
+    } catch (error) {
+      console.error(`The update file ${pending.file} could not be read before installing: ${String(error)}`);
+      return true;
+    }
+    if (actual !== pending.sha256) {
+      console.error(`The update file ${pending.file} changed after it was verified and was deleted.`);
+      this.discardSync(pending.file);
+      return true;
+    }
+    try {
+      pending.run();
+    } catch (error) {
+      console.error(`The update could not be installed: ${String(error)}`);
+      this.discardSync(pending.file);
+    }
     return true;
+  }
+
+  /**
+   * Deletes verified setups and disk images that earlier runs left in the
+   * download folder (an installer still running at the last quit, an opened
+   * disk image). Only files matching the exact names of the updater's downloads
+   * are touched. Called once at startup; failures are logged.
+   */
+  async removeLeftoverDownloads(): Promise<void> {
+    try {
+      await this.removeStaleDownloads(this.options.downloadDir);
+    } catch (error) {
+      if (isErrorCode(error, 'ENOENT')) return;
+      console.warn(`Could not clean up the update folder ${this.options.downloadDir}: ${String(error)}`);
+    }
   }
 
   /**
@@ -244,14 +373,15 @@ export class UpdateService {
     await this.removeStaleDownloads(directory);
     const file = join(directory, `tmp_${this.randomId()}_${plan.asset.name}`);
     try {
-      const actual = await this.download(plan.asset, file);
+      await this.download(plan.asset, file);
       this.options.onProgress({ phase: 'verifying' });
-      if (actual !== expected) {
+      // Hashed from disk after the file was closed, so what is verified is what will run.
+      if ((await hashFile(file)) !== expected) {
         throw new UpdateError(
           `The downloaded file ${plan.asset.name} does not match its published SHA-256 checksum and was deleted.`,
         );
       }
-      return await this.installVerified(target, file);
+      return await this.installVerified(target, file, expected);
     } catch (error) {
       await this.discard(file);
       throw error;
@@ -261,10 +391,11 @@ export class UpdateService {
   private async installVerified(
     target: Exclude<InstallTarget, { mode: 'manual' }>,
     file: string,
+    sha256: string,
   ): Promise<UpdateInstallOutcome> {
     switch (target.mode) {
       case 'installer':
-        this.pending = { run: () => this.options.spawnDetached(file, WINDOWS_INSTALLER_ARGS), file };
+        this.pending = { run: () => this.options.spawnDetached(file, WINDOWS_INSTALLER_ARGS), file, sha256 };
         this.defer(this.options.requestQuit);
         return 'restarting';
       case 'disk-image': {
@@ -282,6 +413,7 @@ export class UpdateService {
             this.options.relaunch(target.appImagePath);
           },
           file,
+          sha256,
         };
         this.defer(this.options.requestQuit);
         return 'restarting';
@@ -294,6 +426,7 @@ export class UpdateService {
     const body = await httpGetBuffer(this.options.httpGet, checksums.url, {
       headers: { Accept: 'application/octet-stream', 'User-Agent': this.options.userAgent },
       timeoutMs: DOWNLOAD_IDLE_TIMEOUT_MS,
+      deadlineMs: CHECK_DEADLINE_MS,
       maxBytes: Math.min(checksums.size, MAX_CHECKSUMS_BYTES),
       isAllowedUrl: isAllowedDownloadUrl,
     });
@@ -304,11 +437,14 @@ export class UpdateService {
     return checksum;
   }
 
-  /** Streams `asset` into `file` and returns its SHA-256 checksum (lower-case hex). */
-  private async download(asset: ReleaseAsset, file: string): Promise<string> {
-    const hash = createHash('sha256');
-    const sink = new FileSink(await open(file, 'wx', 0o600));
+  /**
+   * Streams `asset` into `file`. The response is paused while the disk falls
+   * more than {@link WRITE_BACKLOG_LIMIT_BYTES} behind, so memory stays bounded.
+   */
+  private async download(asset: ReleaseAsset, file: string): Promise<void> {
+    const sink = new FileSink(await this.openFile(file));
     let received = 0;
+    let paused = false;
     let reportedPercent = -1;
     const report = (): void => {
       const percent = Math.floor((received * 100) / asset.size);
@@ -323,9 +459,15 @@ export class UpdateService {
         timeoutMs: DOWNLOAD_IDLE_TIMEOUT_MS,
         maxBytes: asset.size,
         isAllowedUrl: isAllowedDownloadUrl,
-        onData: (chunk) => {
-          sink.write(chunk);
-          hash.update(chunk);
+        onData: (chunk, flow) => {
+          if (!sink.write(chunk) && !paused) {
+            paused = true;
+            flow.pause();
+            void sink.drained().then(() => {
+              paused = false;
+              flow.resume();
+            });
+          }
           received += chunk.length;
           report();
         },
@@ -334,7 +476,6 @@ export class UpdateService {
       await sink.close();
     }
     if (received !== asset.size) throw new UpdateError(`The download of ${asset.name} was incomplete.`);
-    return hash.digest('hex');
   }
 
   /** Deletes downloads left over by earlier attempts (only files named like our downloads). */
@@ -349,6 +490,15 @@ export class UpdateService {
   private async discard(file: string): Promise<void> {
     try {
       await rm(file, { force: true });
+    } catch (error) {
+      console.warn(`Could not delete the update download ${file}: ${String(error)}`);
+    }
+  }
+
+  /** {@link discard} for `will-quit`, where asynchronous work would not finish. */
+  private discardSync(file: string): void {
+    try {
+      rmSync(file, { force: true });
     } catch (error) {
       console.warn(`Could not delete the update download ${file}: ${String(error)}`);
     }

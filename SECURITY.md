@@ -140,11 +140,11 @@ its own. It is implemented without third-party code, on Electron's `net` module 
 Node's `crypto`.
 
 - **What is contacted:** the check sends one `GET` to
-  `https://api.github.com/repos/Amadudl/MarkDownPlusPlus/releases/latest` (10 s time
-  limit, at most 2 MB, `User-Agent: MarkDownPlusPlus/<version>`). GitHub sees your IP
-  address and the app version, as with any download. No telemetry, identifiers or
-  document data are sent. The requests use a separate in-memory session without
-  cookies or credentials.
+  `https://api.github.com/repos/Amadudl/MarkDownPlusPlus/releases/latest` (aborted after
+  10 s without data from the server and after 30 s in total, at most 2 MB,
+  `User-Agent: MarkDownPlusPlus/<version>`). GitHub sees your IP address and the app
+  version, as with any download. No telemetry, identifiers or document data are sent.
+  The requests use a separate in-memory session without cookies or credentials.
 - **When:** once per launch, a few seconds after startup, unless
   **Settings → General → Check for updates at startup** (`general.checkForUpdatesOnStartup`)
   is off, and whenever you choose **Help → Check for Updates**. Development builds never
@@ -155,15 +155,30 @@ Node's `crypto`.
   `https://github.com/Amadudl/MarkDownPlusPlus/releases/download/<tag>/<file>`. Every
   redirect is checked before it is followed against an allowlist (default deny) of
   `https:` hosts: `github.com`, `release-assets.githubusercontent.com` and
-  `objects.githubusercontent.com`. Downloads are limited to the size GitHub reports for
-  the file (at most 600 MB) and abort after 30 s without data.
+  `objects.githubusercontent.com`. `SHA256SUMS.txt` (at most 64 KB) must arrive within
+  30 s in total. Packages are limited to the size GitHub reports for the file (at most
+  600 MB) and abort after 30 s without data; there is no total time limit for them, so
+  slow connections still finish. The download is paused while more than 4 MB wait to be
+  written to disk, so memory use stays bounded.
+- **Where:** setups and disk images are written to `updates` in the app's own user data
+  folder (not the shared `%TEMP%`/`$TMPDIR`), with exclusive creation (`wx`) and mode
+  `0600`. Every write is continued until all bytes are on disk. Verified setups and disk
+  images left over by earlier runs are deleted at the next start; only files whose name
+  exactly matches the updater's pattern (`tmp_<16 hex>_MarkDownPlusPlus-<version>-<package>`)
+  are touched. An AppImage update is written next to the AppImage, so it can be renamed
+  over it.
 - **Verification:** before anything is opened or executed, the SHA-256 checksum of the
-  download must match the entry for that file in the `SHA256SUMS.txt` of the same
-  release. A mismatch, a missing entry or an incomplete download deletes the file.
-  This protects against corrupted and tampered downloads from the storage hosts; it does
-  not protect against a compromised GitHub repository or release (the checksum file
-  comes from the same release), which is why the releases also carry build provenance
-  attestations you can verify by hand.
+  downloaded file, read back from disk after it was closed, must match the entry for that
+  file in the `SHA256SUMS.txt` of the same release. A mismatch, a missing entry or an
+  incomplete download deletes the file. A Windows setup or an AppImage waits for the app
+  to quit; it is hashed again right before it is started or renamed, and a file that
+  changed or vanished in the meantime is deleted and never used. This protects against
+  corrupted and tampered downloads from the storage hosts; it does not protect against a
+  compromised GitHub repository or release (the checksum file comes from the same
+  release), which is why the releases also carry build provenance attestations you can
+  verify by hand. Files downloaded by the updater carry no Mark-of-the-Web (Windows) or
+  quarantine flag (macOS), so SmartScreen and Gatekeeper do not check them again when
+  they are opened; trust rests on the `SHA256SUMS.txt` of the same release.
 - **Installing:** a Windows NSIS installation runs the verified setup with
   `/S --updated --force-run` only after the app has quit through the normal close flow.
   That quit always asks about every unsaved document, even when
@@ -171,11 +186,12 @@ Node's `crypto`.
   keeping a document open cancels the install, deletes the download and the update
   notice says so. macOS opens the verified disk image; you replace the app yourself. A
   Linux AppImage is replaced atomically (written next to it, then made executable and
-  renamed over it) only after the same close flow, and relaunched. It counts as an AppImage only when `APPIMAGE` is set **and** the running
-  executable lies inside the AppImage mount `APPDIR`; both variables are inherited by
-  child processes, so a `.deb`/`.tar.gz` copy started from a terminal of another
-  AppImage app never touches that app's file. Portable builds and `.deb`/`.rpm`/`.tar.gz` installations only open the
-  release page through the external URL allowlist.
+  renamed over it) only after the same close flow, and relaunched. It counts as an
+  AppImage only when `APPIMAGE` is set **and** the running executable lies inside the
+  AppImage mount `APPDIR`; both variables are inherited by child processes, so a
+  `.deb`/`.tar.gz` copy started from a terminal of another AppImage app never touches
+  that app's file. Portable builds and `.deb`/`.rpm`/`.tar.gz` installations only open
+  the release page through the external URL allowlist.
 - **Test hook:** `MPP_UPDATE_API_URL` replaces the API URL only in unpackaged builds and
   only with a loopback address (E2E tests); packaged builds ignore it.
 

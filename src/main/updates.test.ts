@@ -125,7 +125,8 @@ describe('createUpdateService', () => {
       onProgress: hooks.onProgress,
       spawnDetached,
     });
-    expect(options.downloadDir.replace(/\\/g, '/')).toBe('/tmp-of-temp/MarkDownPlusPlus-updates');
+    // A folder only this app uses (not the shared %TEMP%), inside its own user data.
+    expect(options.downloadDir.replace(/\\/g, '/')).toBe('/tmp-of-userData/updates');
 
     expect(h.sessions[0]?.()).toEqual({ partition: UPDATE_SESSION_PARTITION });
     expect(h.session.fromPartition).toHaveBeenCalledWith('mpp-updates');

@@ -124,6 +124,7 @@ const updates = vi.hoisted(() => ({
     install: vi.fn(),
     runPendingInstall: vi.fn(() => false),
     cancelPendingInstall: vi.fn(),
+    removeLeftoverDownloads: vi.fn(() => Promise.resolve()),
     hasPendingInstall: false,
   },
   hooks: null as UpdateHooks | null,
@@ -548,8 +549,11 @@ describe('Application', () => {
     const info = { version: '9.0.0' };
 
     it('wires the update service to the windows, the quit and the close handshake', async () => {
+      updates.service.removeLeftoverDownloads.mockClear();
       await new Application('win32').start();
       expect(deps().updates).toBe(updates.service);
+      // Verified setups and disk images of earlier runs are deleted at every start.
+      expect(updates.service.removeLeftoverDownloads).toHaveBeenCalledTimes(1);
       const [window] = windows.FakeAppWindow.list;
       if (!window) throw new Error('window expected');
       const progress = { phase: 'verifying' } as const;

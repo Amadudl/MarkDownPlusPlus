@@ -1,17 +1,29 @@
 import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import {
+  mkdir,
+  mkdtemp,
+  open,
+  readdir,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+  type FileHandle,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { UpdateProgress } from '../../shared/types';
-import type { HttpGet, HttpGetOptions } from './httpClient';
+import type { FlowControl, HttpGet, HttpGetOptions } from './httpClient';
 import { CHECKSUMS_FILE_NAME, LATEST_RELEASE_API_URL, UpdateError, type InstallTarget } from './updateCore';
 import {
+  CHECK_DEADLINE_MS,
   CHECK_TIMEOUT_MS,
   DOWNLOAD_IDLE_TIMEOUT_MS,
   FileSink,
   UpdateService,
   WINDOWS_INSTALLER_ARGS,
+  WRITE_BACKLOG_LIMIT_BYTES,
   type UpdateServiceOptions,
 } from './updateService';
 
@@ -56,26 +68,30 @@ interface FakeNetwork {
   readonly httpGet: HttpGet;
   readonly calls: { url: string; options: HttpGetOptions }[];
   readonly files: Map<string, Buffer | Error>;
+  /** Pause/resume calls of the consumers, in order. */
+  readonly flow: ('pause' | 'resume')[];
 }
 
-/** Serves `files` by URL in chunks of 1000 bytes; unknown URLs fail like a 404. */
-function fakeNetwork(entries: Readonly<Record<string, Buffer | Error>>): FakeNetwork {
+/** Serves `files` by URL in chunks of `chunkSize` bytes; unknown URLs fail like a 404. */
+function fakeNetwork(entries: Readonly<Record<string, Buffer | Error>>, chunkSize = 1000): FakeNetwork {
   const files = new Map(Object.entries(entries));
   const calls: FakeNetwork['calls'] = [];
+  const flow: FakeNetwork['flow'] = [];
+  const control: FlowControl = { pause: () => flow.push('pause'), resume: () => flow.push('resume') };
   const httpGet: HttpGet = (url, options) => {
     calls.push({ url, options });
     const file = files.get(url);
     if (file === undefined) return Promise.reject(new UpdateError(`HTTP 404 for ${url}`));
     if (file instanceof Error) return Promise.reject(file);
     try {
-      for (let offset = 0; offset < file.length; offset += 1000)
-        options.onData(file.subarray(offset, offset + 1000));
+      for (let offset = 0; offset < file.length; offset += chunkSize)
+        options.onData(file.subarray(offset, offset + chunkSize), control);
     } catch (error) {
       return Promise.reject(error instanceof Error ? error : new Error(String(error)));
     }
     return Promise.resolve();
   };
-  return { httpGet, calls, files };
+  return { httpGet, calls, files, flow };
 }
 
 /** A network with the latest release (1.1.0 with every package and the checksum file). */
@@ -166,7 +182,10 @@ describe('UpdateService.check', () => {
         'User-Agent': 'MarkDownPlusPlus/1.0.5',
       },
       timeoutMs: CHECK_TIMEOUT_MS,
+      deadlineMs: CHECK_DEADLINE_MS,
     });
+    expect(CHECK_TIMEOUT_MS).toBe(10_000);
+    expect(CHECK_DEADLINE_MS).toBe(30_000);
     const allowed = call?.options.isAllowedUrl;
     expect(allowed?.(new URL('https://api.github.com/repos/x/y/releases/latest'))).toBe(true);
     expect(allowed?.(new URL('https://evil.example/repos'))).toBe(false);
@@ -351,7 +370,8 @@ describe('UpdateService.install', () => {
   });
 
   it('removes downloads of earlier attempts but nothing else', async () => {
-    await mkdir(join(downloadDir, 'tmp_fedcba9876543210_MarkDownPlusPlus-locked'), { recursive: true });
+    const locked = 'tmp_fedcba9876543210_MarkDownPlusPlus-1.0.8-win-x64-setup.exe';
+    await mkdir(join(downloadDir, locked), { recursive: true });
     await writeFile(
       join(downloadDir, 'tmp_aaaaaaaaaaaaaaaa_MarkDownPlusPlus-1.0.9-win-x64-setup.exe'),
       'old',
@@ -365,12 +385,171 @@ describe('UpdateService.install', () => {
       expect((await readdir(downloadDir)).sort()).toEqual([
         'notes.txt',
         `tmp_0123456789abcdef_${SETUP}`,
-        'tmp_fedcba9876543210_MarkDownPlusPlus-locked',
+        locked,
       ]);
       // A leftover that cannot be deleted only costs disk space.
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining('tmp_fedcba9876543210_MarkDownPlusPlus-locked'),
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining(locked));
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('verifies the file on disk, not the bytes that came from the network', async () => {
+    // A disk that reports every write as complete but stores zeros (a lying or
+    // failing device): the network stream hashes fine, the file does not.
+    const openFile = (path: string): Promise<FileHandle> =>
+      open(path, 'wx', 0o600).then(
+        (handle) =>
+          new Proxy(handle, {
+            get(target, property, receiver) {
+              if (property === 'write') {
+                return async (buffer: Buffer, offset = 0, length = buffer.length - offset) => {
+                  await target.write(Buffer.alloc(length));
+                  return { bytesWritten: length, buffer };
+                };
+              }
+              const value: unknown = Reflect.get(target, property, receiver);
+              return typeof value === 'function'
+                ? (value as (...args: unknown[]) => unknown).bind(target)
+                : value;
+            },
+          }),
       );
+    const { service, options } = harness(INSTALLER, releaseNetwork(), { openFile });
+    await service.check();
+    await expect(service.install('1.1.0')).rejects.toThrow('does not match its published SHA-256 checksum');
+    expect(await readdir(downloadDir)).toEqual([]);
+    expect(options.requestQuit).not.toHaveBeenCalled();
+  });
+
+  it('re-checks the setup right before running it and refuses a file swapped meanwhile', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      const { service, options } = harness();
+      await service.check();
+      await service.install('1.1.0');
+      // Another process replaces the verified setup while the close dialogs are open.
+      const file = join(downloadDir, `tmp_0123456789abcdef_${SETUP}`);
+      await writeFile(file, 'malware');
+      expect(service.runPendingInstall()).toBe(true);
+      expect(options.spawnDetached).not.toHaveBeenCalled();
+      expect(await readdir(downloadDir)).toEqual([]);
+      expect(error).toHaveBeenCalledWith(expect.stringContaining('changed after it was verified'));
+    } finally {
+      error.mockRestore();
+    }
+  });
+
+  it('re-checks the AppImage right before replacing and refuses a file swapped meanwhile', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      const appImagePath = join(dir, 'MarkDown++.AppImage');
+      await writeFile(appImagePath, 'old');
+      const { service, options } = harness({
+        mode: 'appimage',
+        assetSuffix: 'linux-x86_64.AppImage',
+        appImagePath,
+      });
+      await service.check();
+      await service.install('1.1.0');
+      await writeFile(join(dir, `tmp_0123456789abcdef_${APPIMAGE}`), 'malware');
+      expect(service.runPendingInstall()).toBe(true);
+      expect(await readFile(appImagePath, 'utf8')).toBe('old');
+      expect(await readdir(dir)).toEqual(['MarkDown++.AppImage']);
+      expect(options.relaunch).not.toHaveBeenCalled();
+      // A setup that vanished is refused the same way.
+      await service.check();
+      await service.install('1.1.0');
+      await rm(join(dir, `tmp_0123456789abcdef_${APPIMAGE}`));
+      expect(service.runPendingInstall()).toBe(true);
+      expect(await readFile(appImagePath, 'utf8')).toBe('old');
+      expect(error).toHaveBeenCalledTimes(2);
+    } finally {
+      error.mockRestore();
+    }
+  });
+
+  it('logs and deletes the update when the AppImage cannot be replaced at quit', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      // The AppImage path became a non-empty folder: the rename fails.
+      const appImagePath = join(dir, 'MarkDown++.AppImage');
+      await mkdir(join(appImagePath, 'inside'), { recursive: true });
+      const { service, options } = harness({
+        mode: 'appimage',
+        assetSuffix: 'linux-x86_64.AppImage',
+        appImagePath,
+      });
+      await service.check();
+      await service.install('1.1.0');
+      expect(service.runPendingInstall()).toBe(true);
+      expect(error).toHaveBeenCalledWith(expect.stringContaining('The update could not be installed'));
+      expect(options.relaunch).not.toHaveBeenCalled();
+      expect(await readdir(dir)).toEqual(['MarkDown++.AppImage']);
+    } finally {
+      error.mockRestore();
+    }
+  });
+
+  it('pauses the download while the disk falls behind and resumes once it caught up', async () => {
+    const big = Buffer.alloc(WRITE_BACKLOG_LIMIT_BYTES * 2 + 5, 7);
+    const sums = Buffer.from(`${sha256(big)}  ${SETUP}\n`);
+    const files = { [SETUP]: big, [CHECKSUMS_FILE_NAME]: sums };
+    const network = fakeNetwork(
+      {
+        [LATEST_RELEASE_API_URL]: Buffer.from(releaseJson('1.1.0', files)),
+        [`${DOWNLOAD}/${SETUP}`]: big,
+        [`${DOWNLOAD}/${CHECKSUMS_FILE_NAME}`]: sums,
+      },
+      1024 * 1024,
+    );
+    const { service } = harness(INSTALLER, network);
+    await service.check();
+    expect(await service.install('1.1.0')).toBe('restarting');
+    expect(network.flow.length).toBeGreaterThan(0);
+    expect(network.flow[0]).toBe('pause');
+    // Every pause is followed by exactly one resume.
+    expect(network.flow.filter((call) => call === 'pause')).toHaveLength(
+      network.flow.filter((call) => call === 'resume').length,
+    );
+    // Buffer.equals: a deep toEqual over 8 MB takes half a minute.
+    expect((await readFile(join(downloadDir, `tmp_0123456789abcdef_${SETUP}`))).equals(big)).toBe(true);
+  });
+
+  it('deletes verified setups and disk images left over by earlier runs at startup, and nothing else', async () => {
+    await mkdir(downloadDir, { recursive: true });
+    const leftovers = [
+      'tmp_aaaaaaaaaaaaaaaa_MarkDownPlusPlus-1.1.0-win-x64-setup.exe',
+      'tmp_bbbbbbbbbbbbbbbb_MarkDownPlusPlus-1.1.0-win-arm64-setup.exe',
+      'tmp_cccccccccccccccc_MarkDownPlusPlus-2.0.10-mac-arm64.dmg',
+      'tmp_dddddddddddddddd_MarkDownPlusPlus-2.0.10-mac-x64.dmg',
+    ];
+    const foreign = [
+      'notes.txt',
+      'MarkDownPlusPlus-1.1.0-win-x64-setup.exe',
+      'tmp_aaaaaaaaaaaaaaaa_MarkDownPlusPlus-1.1.0-win-x64-setup.exe.txt',
+      // Upper-case hex is not ours (and differs from the leftovers on case-insensitive disks too).
+      'tmp_EEEEEEEEEEEEEEEE_MarkDownPlusPlus-1.1.0-win-x64-setup.exe',
+      'tmp_aaaa_MarkDownPlusPlus-1.1.0-win-x64-setup.exe',
+      'tmp_aaaaaaaaaaaaaaaa_Other-1.1.0-win-x64-setup.exe',
+      'tmp_aaaaaaaaaaaaaaaa_MarkDownPlusPlus-1.1.0-win-x64-portable.exe',
+    ];
+    for (const name of [...leftovers, ...foreign]) await writeFile(join(downloadDir, name), 'x');
+    const { service } = harness();
+    await service.removeLeftoverDownloads();
+    expect((await readdir(downloadDir)).sort()).toEqual([...foreign].sort());
+    // A missing folder (no update was ever downloaded) is fine.
+    await rm(downloadDir, { recursive: true });
+    await expect(service.removeLeftoverDownloads()).resolves.toBeUndefined();
+  });
+
+  it('logs a download folder that cannot be listed at startup', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      await mkdir(dir, { recursive: true });
+      await writeFile(downloadDir, 'a file, not a folder');
+      await harness().service.removeLeftoverDownloads();
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('Could not clean up'));
     } finally {
       warn.mockRestore();
     }
@@ -465,13 +644,21 @@ describe('UpdateService.install', () => {
   });
 });
 
+/** The part of FileHandle.write that FileSink uses. */
+type WriteFn = (
+  chunk: Buffer,
+  offset?: number,
+  length?: number,
+) => Promise<{ bytesWritten: number; buffer: Buffer }>;
+
 describe('FileSink', () => {
   it('writes chunks in order', async () => {
     const written: string[] = [];
     const handle = {
-      write: vi.fn(async (chunk: Buffer) => {
+      write: vi.fn<WriteFn>(async (chunk, offset = 0, length = chunk.length - offset) => {
         await Promise.resolve();
-        written.push(chunk.toString());
+        written.push(chunk.subarray(offset, offset + length).toString());
+        return { bytesWritten: length, buffer: chunk };
       }),
       close: vi.fn(() => Promise.resolve()),
     };
@@ -481,6 +668,64 @@ describe('FileSink', () => {
     await sink.close();
     expect(written).toEqual(['a', 'b']);
     expect(handle.close).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps writing until the whole chunk is on disk when the system writes less (short writes)', async () => {
+    const written: Buffer[] = [];
+    const handle = {
+      // Writes at most 3 bytes per call, as a nearly full disk or a pipe may do.
+      write: vi.fn<WriteFn>((chunk, offset = 0, length = chunk.length - offset) => {
+        const count = Math.min(3, length);
+        written.push(Buffer.from(chunk.subarray(offset, offset + count)));
+        return Promise.resolve({ bytesWritten: count, buffer: chunk });
+      }),
+      close: vi.fn(() => Promise.resolve()),
+    };
+    const sink = new FileSink(handle as never);
+    sink.write(Buffer.from('hello world'));
+    sink.write(Buffer.from('!'));
+    await sink.close();
+    expect(Buffer.concat(written).toString()).toBe('hello world!');
+  });
+
+  it('fails instead of looping when the system writes nothing', async () => {
+    const handle = {
+      write: vi.fn((chunk: Buffer) => Promise.resolve({ bytesWritten: 0, buffer: chunk })),
+      close: vi.fn(() => Promise.resolve()),
+    };
+    const sink = new FileSink(handle as never);
+    sink.write(Buffer.from('abc'));
+    await expect(sink.close()).rejects.toThrow('wrote no data');
+    expect(handle.write).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports a backlog above the limit and resolves drained() once it is written', async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const handle = {
+      write: vi.fn<WriteFn>(async (chunk, offset = 0, length = chunk.length - offset) => {
+        await gate;
+        return { bytesWritten: length, buffer: chunk };
+      }),
+      close: vi.fn(() => Promise.resolve()),
+    };
+    const sink = new FileSink(handle as never, 4);
+    expect(sink.write(Buffer.from('ab'))).toBe(true);
+    expect(sink.write(Buffer.from('cde'))).toBe(false);
+    let drained = false;
+    const waiting = sink.drained().then(() => {
+      drained = true;
+    });
+    await Promise.resolve();
+    expect(drained).toBe(false);
+    release();
+    await waiting;
+    expect(drained).toBe(true);
+    // Nothing queued: drained() resolves at once.
+    await expect(sink.drained()).resolves.toBeUndefined();
+    await sink.close();
   });
 
   it('reports the first write error on the next write and on close', async () => {

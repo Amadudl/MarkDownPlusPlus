@@ -71,9 +71,11 @@ contract.
   locked-down session), and the update function: `updateCore` (pure rules: SemVer
   comparison, zod validation of the GitHub release, asset choice per platform,
   architecture and install type, URL allowlists, `SHA256SUMS.txt` parser), `httpClient`
-  (GET over Electron `net` with manual, allowlisted redirects, size limit and idle
-  timeout) and `updateService` (check, streamed download with SHA-256 verification,
-  install). `updates.ts` wires it to Electron and schedules the background check.
+  (GET over Electron `net` with manual, allowlisted redirects, size limit, idle timeout,
+  optional overall deadline and pause/resume backpressure) and `updateService` (check,
+  streamed download into `userData/updates` with bounded write backlog, SHA-256
+  verification of the file read back from disk, a second check right before the setup
+  runs or the AppImage is renamed, install, and removal of leftovers at startup). `updates.ts` wires it to Electron and schedules the background check.
 - Updates (`updateService`, see [SECURITY.md](../SECURITY.md#updates)): the only network
   access of the main process. `UpdateCheck` asks
   `api.github.com/repos/Amadudl/MarkDownPlusPlus/releases/latest`; `UpdateInstall` takes
