@@ -301,6 +301,7 @@ describe('UpdateService.install', () => {
     });
     expect(service.runPendingInstall()).toBe(false);
     expect(options.spawnDetached).not.toHaveBeenCalled();
+    await vi.waitFor(async () => expect(await readdir(downloadDir)).toEqual([]));
   });
 
   it('refuses a second install while one is downloading', async () => {
@@ -409,22 +410,24 @@ describe('UpdateService.install', () => {
     });
     await service.check();
     expect(await service.install('1.1.0')).toBe('restarting');
+    // Nothing is replaced before every window has closed (unsaved changes were asked about).
+    expect(await readFile(appImagePath, 'utf8')).toBe('old appimage');
+    expect(options.requestQuit).toHaveBeenCalledTimes(1);
+    expect(options.relaunch).not.toHaveBeenCalled();
+    expect(service.runPendingInstall()).toBe(true);
     expect(await readFile(appImagePath)).toEqual(PACKAGES[APPIMAGE]);
     if (process.platform !== 'win32') expect((await stat(appImagePath)).mode & 0o777).toBe(0o755);
     expect((await readdir(apps)).sort()).toEqual([
       'MarkDown++.AppImage',
       'tmp_aaaaaaaaaaaaaaaa_unrelated.AppImage',
     ]);
-    expect(options.requestQuit).toHaveBeenCalledTimes(1);
-    expect(options.relaunch).not.toHaveBeenCalled();
-    expect(service.runPendingInstall()).toBe(true);
     expect(options.relaunch).toHaveBeenCalledWith(appImagePath);
   });
 
-  it('keeps an installed AppImage when the app does not quit', async () => {
+  it('aborts the AppImage update and keeps the old AppImage when the app does not quit', async () => {
     const appImagePath = join(dir, 'MarkDown++.AppImage');
     await writeFile(appImagePath, 'old');
-    const { service, progress } = harness({
+    const { service, progress, options } = harness({
       mode: 'appimage',
       assetSuffix: 'linux-x86_64.AppImage',
       appImagePath,
@@ -434,9 +437,12 @@ describe('UpdateService.install', () => {
     service.cancelPendingInstall();
     expect(progress.at(-1)).toEqual({
       phase: 'cancelled',
-      message: 'The update is installed and takes effect the next time you start MarkDown++.',
+      message: expect.stringContaining('was not installed') as unknown,
     });
-    expect(await readFile(appImagePath)).toEqual(PACKAGES[APPIMAGE]);
+    expect(await readFile(appImagePath, 'utf8')).toBe('old');
+    await vi.waitFor(async () => expect(await readdir(dir)).toEqual(['MarkDown++.AppImage']));
+    expect(service.runPendingInstall()).toBe(false);
+    expect(options.relaunch).not.toHaveBeenCalled();
   });
 
   it('quits after the reply was sent and uses random download names by default', async () => {

@@ -12,10 +12,11 @@ export function formatMegabytes(bytes: number): string {
 /** What happens when the user installs an update, per install mode. */
 export const INSTALL_HINTS: Readonly<Record<UpdateInstallMode, string>> = {
   installer:
-    'MarkDown++ downloads the update, closes (asking about unsaved changes), installs it and starts again.',
+    'MarkDown++ downloads the update, closes (always asking about unsaved changes), installs it and starts again.',
   'disk-image':
     'MarkDown++ downloads the update and opens the disk image. Then quit MarkDown++ and drag the new version into the Applications folder.',
-  appimage: 'MarkDown++ downloads the update, replaces this AppImage and starts again.',
+  appimage:
+    'MarkDown++ downloads the update, closes (always asking about unsaved changes), replaces this AppImage and starts again.',
   manual: 'This installation cannot update itself. Download the new version from the release page.',
 };
 

@@ -124,6 +124,7 @@ const updates = vi.hoisted(() => ({
     install: vi.fn(),
     runPendingInstall: vi.fn(() => false),
     cancelPendingInstall: vi.fn(),
+    hasPendingInstall: false,
   },
   hooks: null as UpdateHooks | null,
   api: { url: 'https://api.github.com/repos/Amadudl/MarkDownPlusPlus/releases/latest', overridden: false },
@@ -554,6 +555,11 @@ describe('Application', () => {
       const progress = { phase: 'verifying' } as const;
       updates.hooks?.onProgress(progress);
       expect(window.send).toHaveBeenCalledWith(IpcChannel.UpdateProgress, progress);
+      // Closes caused by an update install are marked, so unsaved changes are always asked about.
+      expect(window.options.closeReason?.()).toBe('user');
+      updates.service.hasPendingInstall = true;
+      expect(window.options.closeReason?.()).toBe('update');
+      updates.service.hasPendingInstall = false;
       updates.hooks?.requestQuit();
       expect(app.quit).toHaveBeenCalledTimes(1);
 

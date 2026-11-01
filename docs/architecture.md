@@ -80,9 +80,12 @@ contract.
   only the version the check reported and downloads the matching package of **that**
   release from `github.com` (redirects only to `release-assets.githubusercontent.com` /
   `objects.githubusercontent.com`). Nothing is opened or executed before its SHA-256
-  matches the release's `SHA256SUMS.txt`. A Windows setup or an AppImage relaunch is
-  armed as a pending install and runs on `will-quit`, after the close handshake of every
-  window; a cancelled close drops it and sends `UpdateProgress` `cancelled`.
+  matches the release's `SHA256SUMS.txt`. A Windows setup or an AppImage replacement and
+  relaunch is armed as a pending install and runs on `will-quit`, after the close
+  handshake of every window; while it is armed, `CloseRequested` carries the reason
+  `update`, which makes the renderer ask about every unsaved document regardless of
+  `general.confirmOnClose`. A cancelled close drops it, deletes the download and sends
+  `UpdateProgress` `cancelled`.
 - `menu.ts` — native application menu; every item sends a `CommandId` to the renderer.
 - `keyboard.ts` — deterministic shortcut routing: every key press of an app window is
   matched against the platform's shortcut table (`shortcutsFor(platform)`, i.e.

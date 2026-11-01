@@ -281,6 +281,8 @@ export class Application {
         this.quitting = false;
         this.updates?.cancelPendingInstall();
       },
+      // A quit for an update install always asks about unsaved changes (confirmOnClose aside).
+      closeReason: () => (this.updates?.hasPendingInstall === true ? 'update' : 'user'),
     });
     window.load().catch((error: unknown) => console.error('Failed to load the application window:', error));
     return window;

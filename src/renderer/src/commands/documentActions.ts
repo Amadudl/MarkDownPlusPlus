@@ -198,14 +198,25 @@ export async function saveAllDocuments(): Promise<boolean> {
   return allSaved;
 }
 
+/** Options of {@link resolveUnsaved}. */
+export interface ResolveUnsavedOptions {
+  /**
+   * Ask even when `general.confirmOnClose` is off. Used when an update install
+   * quits the app: unsaved edits must never be lost to an update.
+   */
+  readonly alwaysAsk?: boolean;
+}
+
 /**
  * Asks what to do with unsaved changes of a document (when it is dirty and the
- * user enabled confirmation). Resolves to true when the caller may discard the tab.
+ * user enabled confirmation, or `alwaysAsk` is set). Resolves to true when the
+ * caller may discard the tab.
  */
-export async function resolveUnsaved(id: string): Promise<boolean> {
+export async function resolveUnsaved(id: string, options: ResolveUnsavedOptions = {}): Promise<boolean> {
   const doc = flushEditor(id);
   if (doc === undefined) return true;
-  if (!isDirty(doc) || !useSettings.getState().settings.general.confirmOnClose) return true;
+  const ask = options.alwaysAsk === true || useSettings.getState().settings.general.confirmOnClose;
+  if (!isDirty(doc) || !ask) return true;
   useDocuments.getState().activate(id);
   let choice: UnsavedChoice;
   try {

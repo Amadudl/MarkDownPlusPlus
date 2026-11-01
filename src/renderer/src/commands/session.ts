@@ -1,4 +1,4 @@
-import type { SessionState } from '@shared/types';
+import type { CloseReason, SessionState } from '@shared/types';
 import { getApi } from '@renderer/platform/api';
 import { toDesktopPlatform } from '@renderer/platform/platform';
 import { useDocuments } from '@renderer/store/documents';
@@ -153,15 +153,17 @@ let closing = false;
  * Window close handshake: resolves unsaved changes of every dirty document,
  * saves the session and tells the main process the window may close. Cancelling
  * any prompt (or a failed save) aborts the close, and the main process is told
- * so it can drop the pending close and any pending application quit.
+ * so it can drop the pending close and any pending application quit (and the
+ * update install waiting for it). A close for an update install (`reason`
+ * `update`) asks about every unsaved document even when confirmations are off.
  * @returns true when the window was allowed to close.
  */
-export async function handleCloseRequest(): Promise<boolean> {
+export async function handleCloseRequest(reason: CloseReason = 'user'): Promise<boolean> {
   if (closing) return false;
   closing = true;
   try {
     for (const doc of [...useDocuments.getState().documents]) {
-      if (!(await resolveUnsaved(doc.id))) {
+      if (!(await resolveUnsaved(doc.id, { alwaysAsk: reason === 'update' }))) {
         try {
           await getApi().app.closeCancelled();
         } catch (error) {
@@ -189,7 +191,7 @@ export async function handleCloseRequest(): Promise<boolean> {
 export function bindAppEvents(): () => void {
   const api = getApi().app;
   const offOpen = api.onOpenFiles((files) => openFiles(files));
-  const offClose = api.onCloseRequested(() => void handleCloseRequest());
+  const offClose = api.onCloseRequested((reason) => void handleCloseRequest(reason));
   return () => {
     offOpen();
     offClose();

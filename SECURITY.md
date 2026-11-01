@@ -165,11 +165,13 @@ Node's `crypto`.
   comes from the same release), which is why the releases also carry build provenance
   attestations you can verify by hand.
 - **Installing:** a Windows NSIS installation runs the verified setup with
-  `/S --updated --force-run` only after the app has quit through the normal close flow
-  (unsaved changes are asked about; keeping a document open cancels the install). macOS
-  opens the verified disk image; you replace the app yourself. A Linux AppImage is
-  replaced atomically (written next to it, made executable, renamed over it) and
-  relaunched. It counts as an AppImage only when `APPIMAGE` is set **and** the running
+  `/S --updated --force-run` only after the app has quit through the normal close flow.
+  That quit always asks about every unsaved document, even when
+  `general.confirmOnClose` is off (the close request carries the reason `update`);
+  keeping a document open cancels the install, deletes the download and the update
+  notice says so. macOS opens the verified disk image; you replace the app yourself. A
+  Linux AppImage is replaced atomically (written next to it, then made executable and
+  renamed over it) only after the same close flow, and relaunched. It counts as an AppImage only when `APPIMAGE` is set **and** the running
   executable lies inside the AppImage mount `APPDIR`; both variables are inherited by
   child processes, so a `.deb`/`.tar.gz` copy started from a terminal of another
   AppImage app never touches that app's file. Portable builds and `.deb`/`.rpm`/`.tar.gz` installations only open the

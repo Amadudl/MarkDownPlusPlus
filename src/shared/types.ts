@@ -110,6 +110,13 @@ export interface AppInfo {
 
 export type UnsavedChoice = 'save' | 'discard' | 'cancel';
 
+/**
+ * Why a window is asked to close: `user` for every normal close or quit, `update`
+ * when a downloaded update quits the app to install itself. An update quit always
+ * asks about unsaved changes, even when `general.confirmOnClose` is off.
+ */
+export type CloseReason = 'user' | 'update';
+
 export interface FileChangedEvent {
   readonly path: string;
   readonly kind: 'changed' | 'deleted';
@@ -232,7 +239,7 @@ export interface MppApi {
     onMenuCommand(listener: (command: CommandIdValue, arg?: string) => void): Unsubscribe;
     onOpenFiles(listener: (files: FileReadResult[]) => void): Unsubscribe;
     onFileChanged(listener: (event: FileChangedEvent) => void): Unsubscribe;
-    onCloseRequested(listener: () => void): Unsubscribe;
+    onCloseRequested(listener: (reason: CloseReason) => void): Unsubscribe;
   };
   /**
    * In-app updates from the GitHub releases of the project. The main process

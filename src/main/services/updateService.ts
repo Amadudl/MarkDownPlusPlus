@@ -5,7 +5,8 @@
  * are ever opened or executed; everything else is deleted.
  */
 import { createHash, randomBytes } from 'node:crypto';
-import { chmod, mkdir, open, readdir, rename, rm, type FileHandle } from 'node:fs/promises';
+import { chmodSync, renameSync } from 'node:fs';
+import { mkdir, open, readdir, rm, type FileHandle } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import type { UpdateCheckResult, UpdateInfo, UpdateInstallOutcome, UpdateProgress } from '../../shared/types';
 import { httpGetBuffer, type HttpGet } from './httpClient';
@@ -107,11 +108,15 @@ interface KnownUpdate {
   readonly info: UpdateInfo;
 }
 
-/** Work left for the moment the app quits, and what to tell the user if it does not quit. */
+/** Work left for the moment the app quits, and the verified download it uses. */
 interface PendingInstall {
   readonly run: () => void;
-  readonly cancelledMessage: string;
+  readonly file: string;
 }
+
+/** Shown when the app did not quit, so a pending install was dropped. */
+export const CANCELLED_MESSAGE =
+  'The update was not installed because MarkDown++ did not close. Check for updates again to retry.';
 
 /** Checks for, downloads, verifies and installs updates (see the module documentation). */
 export class UpdateService {
@@ -207,12 +212,16 @@ export class UpdateService {
     return true;
   }
 
-  /** Drops a pending install because the app did not quit (the user kept a document open). */
+  /**
+   * Drops a pending install because the app did not quit (the user kept a
+   * document open): nothing is installed and the verified download is deleted.
+   */
   cancelPendingInstall(): void {
     const pending = this.pending;
     if (pending === null) return;
     this.pending = null;
-    this.options.onProgress({ phase: 'cancelled', message: pending.cancelledMessage });
+    void this.discard(pending.file);
+    this.options.onProgress({ phase: 'cancelled', message: CANCELLED_MESSAGE });
   }
 
   private async installKnown(known: KnownUpdate): Promise<UpdateInstallOutcome> {
@@ -255,11 +264,7 @@ export class UpdateService {
   ): Promise<UpdateInstallOutcome> {
     switch (target.mode) {
       case 'installer':
-        this.pending = {
-          run: () => this.options.spawnDetached(file, WINDOWS_INSTALLER_ARGS),
-          cancelledMessage:
-            'The update was not installed because MarkDown++ did not close. Check for updates again to retry.',
-        };
+        this.pending = { run: () => this.options.spawnDetached(file, WINDOWS_INSTALLER_ARGS), file };
         this.defer(this.options.requestQuit);
         return 'restarting';
       case 'disk-image': {
@@ -268,12 +273,15 @@ export class UpdateService {
         return 'disk-image-opened';
       }
       case 'appimage': {
-        // Same folder as the AppImage, so the rename replaces it atomically.
-        await chmod(file, 0o755);
-        await rename(file, target.appImagePath);
+        // Replaced only once every window has closed, so keeping a document open
+        // aborts the update. Same folder as the AppImage: the rename is atomic.
         this.pending = {
-          run: () => this.options.relaunch(target.appImagePath),
-          cancelledMessage: 'The update is installed and takes effect the next time you start MarkDown++.',
+          run: () => {
+            chmodSync(file, 0o755);
+            renameSync(file, target.appImagePath);
+            this.options.relaunch(target.appImagePath);
+          },
+          file,
         };
         this.defer(this.options.requestQuit);
         return 'restarting';

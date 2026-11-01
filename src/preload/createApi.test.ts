@@ -138,11 +138,13 @@ describe('createMppApi', () => {
     emit(IpcChannel.OpenFiles, [{ path: '/a.md' }]);
     emit(IpcChannel.OpenFiles, 'not an array');
     emit(IpcChannel.FileChangedOnDisk, { path: '/a.md', kind: 'deleted', mtimeMs: 0 });
-    emit(IpcChannel.CloseRequested, 'ignored');
+    emit(IpcChannel.CloseRequested, 'unknown');
+    emit(IpcChannel.CloseRequested, 'update');
+    emit(IpcChannel.CloseRequested);
     expect(settings).toHaveBeenCalledWith(DEFAULT_SETTINGS);
     expect(files.mock.calls).toEqual([[[{ path: '/a.md' }]]]);
     expect(changed).toHaveBeenCalledWith({ path: '/a.md', kind: 'deleted', mtimeMs: 0 });
-    expect(close).toHaveBeenCalledWith();
+    expect(close.mock.calls).toEqual([['user'], ['update'], ['user']]);
 
     for (const unsubscribe of unsubscribers) {
       unsubscribe();

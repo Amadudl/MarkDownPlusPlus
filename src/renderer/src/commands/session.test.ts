@@ -143,6 +143,33 @@ describe('session', () => {
     expect(api.state.files.get('/a.md')?.content).toBe('dirty');
   });
 
+  it.each([true, false])(
+    'always asks about unsaved changes when an update install closes the window (confirmOnClose: %s)',
+    async (confirmOnClose) => {
+      setSettings(api, { general: { confirmOnClose } });
+      const id = docs().openFile(fakeFile('/a.md'), 'wysiwyg');
+      docs().updateContent(id, 'dirty');
+      api.state.unsavedChoice = 'cancel';
+      await expect(handleCloseRequest('update')).resolves.toBe(false);
+      expect(api.app.confirmUnsaved).toHaveBeenCalledTimes(1);
+      expect(api.app.closeReady).not.toHaveBeenCalled();
+      // The main process drops the pending install and the notice says so.
+      expect(api.app.closeCancelled).toHaveBeenCalledTimes(1);
+      api.state.unsavedChoice = 'save';
+      await expect(handleCloseRequest('update')).resolves.toBe(true);
+      expect(api.state.files.get('/a.md')?.content).toBe('dirty');
+      expect(api.app.closeReady).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('closes without asking on a normal close when confirmations are off', async () => {
+    setSettings(api, { general: { confirmOnClose: false } });
+    const id = docs().openFile(fakeFile('/a.md'), 'wysiwyg');
+    docs().updateContent(id, 'dirty');
+    await expect(handleCloseRequest('user')).resolves.toBe(true);
+    expect(api.app.confirmUnsaved).not.toHaveBeenCalled();
+  });
+
   it('still aborts the close when the main process cannot be told', async () => {
     const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const id = docs().openFile(fakeFile('/a.md'), 'wysiwyg');
@@ -171,6 +198,13 @@ describe('session', () => {
     expect(selectActiveDocument(docs())?.path).toBe('/z.md');
     api.emit.closeRequested();
     await vi.waitFor(() => expect(api.app.closeReady).toHaveBeenCalled());
+    setSettings(api, { general: { confirmOnClose: false } });
+    const id = docs().activeId!;
+    docs().updateContent(id, 'dirty');
+    api.state.unsavedChoice = 'cancel';
+    api.emit.closeRequested('update');
+    await vi.waitFor(() => expect(api.app.closeCancelled).toHaveBeenCalled());
+    expect(api.app.confirmUnsaved).toHaveBeenCalledTimes(1);
     stop();
     expect(api.listenerCounts()).toMatchObject({ openFiles: 0, closeRequested: 0 });
   });

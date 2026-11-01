@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { CommandIdValue } from '../shared/commands';
 import { IpcChannel, type IpcChannelName } from '../shared/ipc';
 import type { Settings } from '../shared/settings';
+import type { CloseReason } from '../shared/types';
 import { installShortcutRouting } from './keyboard';
 import { readJsonFileSync, writeJsonFileSync } from './services/jsonStore';
 
@@ -103,6 +104,8 @@ export interface AppWindowOptions {
   readonly onClosed?: (window: AppWindow) => void;
   /** Called when a pending close request was cancelled (the user kept the window open). */
   readonly onCloseCancelled?: (window: AppWindow) => void;
+  /** Why the window is being closed, sent with `CloseRequested` (default `user`). */
+  readonly closeReason?: () => CloseReason;
 }
 
 /**
@@ -133,7 +136,8 @@ export function showForBackgroundTests(win: BrowserWindow): void {
  * renderer and a queue for menu commands that arrive before the renderer is ready.
  *
  * Close handshake: a close attempt (window button, Cmd+W on the last tab,
- * `app.quit()`, Cmd+Q) is prevented and `CloseRequested` is sent. The renderer
+ * `app.quit()`, Cmd+Q) is prevented and `CloseRequested` is sent with its
+ * {@link CloseReason} (`update` while an update install waits for the quit). The renderer
  * then either
  * - answers `CloseReady` → the window closes for real;
  * - answers `CloseCancelled` (the user kept a document) → the close is dropped;
@@ -305,7 +309,7 @@ export class AppWindow {
     event.preventDefault();
     if (this.closePending) return;
     this.closePending = true;
-    this.send(IpcChannel.CloseRequested);
+    this.send(IpcChannel.CloseRequested, this.options.closeReason?.() ?? 'user');
     const timeout = this.options.closeTimeoutMs ?? CLOSE_TIMEOUT_MS;
     this.closeTimer = setTimeout(() => {
       this.closeTimer = null;

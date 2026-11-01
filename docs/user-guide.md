@@ -403,12 +403,17 @@ MarkDown++ can update itself from its
   checksum against the `SHA256SUMS.txt` of the same release (a file that does not match
   is deleted and never opened) and then:
 
-  | Installation                                | What happens                                                                                                                                                               |
-  | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | Windows installer (`-setup.exe`)            | MarkDown++ closes (asking about unsaved changes as usual), installs the update silently into the same folder and starts again. Keeping a document open cancels the update. |
-  | macOS (`.dmg`)                              | The new disk image opens. Quit MarkDown++, drag the new version into **Applications** and replace the old one.                                                             |
-  | Linux AppImage                              | The AppImage file is replaced (it keeps its name and location) and MarkDown++ restarts. If you keep a document open, the new version starts next time.                     |
-  | Windows portable, `.deb`, `.rpm`, `.tar.gz` | These cannot update themselves: **Open download page** opens the release page. Install `.deb`/`.rpm` updates with your package manager.                                    |
+  | Installation                     | What happens                                                                                                                                           |
+  | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+  | Windows installer (`-setup.exe`) | MarkDown++ closes, installs the update silently into the same folder and starts again. Keeping a document open cancels the update.                     |
+  | macOS (`.dmg`)                   | The new disk image opens. Quit MarkDown++, drag the new version into **Applications** and replace the old one.                                         |
+  | Linux AppImage                   | MarkDown++ closes, the AppImage file is replaced (it keeps its name and location) and MarkDown++ restarts. Keeping a document open cancels the update. |
+
+  Before an update closes MarkDown++, it always asks about every unsaved document, even
+  when _Confirm before closing unsaved documents_ is off. **Cancel** keeps the document
+  open, the update is not installed (the downloaded file is deleted) and the notice says
+  so; check for updates again to retry.
+  | Windows portable, `.deb`, `.rpm`, `.tar.gz` | These cannot update themselves: **Open download page** opens the release page. Install `.deb`/`.rpm` updates with your package manager. |
 
 - **Later** hides the notice; the next check offers the update again.
 

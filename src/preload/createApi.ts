@@ -107,7 +107,8 @@ export function createMppApi(ipc: IpcRendererLike, webUtils: WebUtilsLike): MppA
         }),
       onFileChanged: (listener) =>
         subscribe(IpcChannel.FileChangedOnDisk, (event) => listener(event as FileChangedEvent)),
-      onCloseRequested: (listener) => subscribe(IpcChannel.CloseRequested, () => listener()),
+      onCloseRequested: (listener) =>
+        subscribe(IpcChannel.CloseRequested, (reason) => listener(reason === 'update' ? 'update' : 'user')),
     },
     update: {
       check: () => invoke(IpcChannel.UpdateCheck),

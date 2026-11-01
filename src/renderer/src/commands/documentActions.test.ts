@@ -282,6 +282,9 @@ describe('document actions', () => {
     expect(lastToast()).toBe('Could not ask about unsaved changes.');
     setSettings(api, { general: { confirmOnClose: false } });
     await expect(resolveUnsaved(id)).resolves.toBe(true);
+    // An update install asks even when confirmations are off.
+    api.state.unsavedChoice = 'cancel';
+    await expect(resolveUnsaved(id, { alwaysAsk: true })).resolves.toBe(false);
   });
 
   it('closes documents after confirmation', async () => {

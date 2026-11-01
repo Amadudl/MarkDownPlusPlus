@@ -3,6 +3,7 @@ import type { CommandIdValue } from '@shared/commands';
 import { applySettingsPatch, DEFAULT_SETTINGS, type Settings, type SettingsPatch } from '@shared/settings';
 import type {
   AppInfo,
+  CloseReason,
   ExportHtmlRequest,
   ExportImageRequest,
   ExportPdfRequest,
@@ -67,7 +68,7 @@ export interface FakeApi extends MppApi {
     menuCommand(command: CommandIdValue, arg?: string): void;
     openFiles(files: FileReadResult[]): void;
     fileChanged(event: FileChangedEvent): void;
-    closeRequested(): void;
+    closeRequested(reason?: CloseReason): void;
     settingsChanged(settings: Settings): void;
     updateAvailable(update: UpdateInfo): void;
     updateProgress(progress: UpdateProgress): void;
@@ -127,7 +128,7 @@ export function createFakeApi(files: readonly FileReadResult[] = []): FakeApi {
   const menu = emitter<[CommandIdValue, string | undefined]>();
   const open = emitter<[FileReadResult[]]>();
   const changed = emitter<[FileChangedEvent]>();
-  const close = emitter<[]>();
+  const close = emitter<[CloseReason]>();
   const settingsChanged = emitter<[Settings]>();
   const updateAvailable = emitter<[UpdateInfo]>();
   const updateProgress = emitter<[UpdateProgress]>();
@@ -220,7 +221,7 @@ export function createFakeApi(files: readonly FileReadResult[] = []): FakeApi {
       ),
       onOpenFiles: vi.fn((listener: (files: FileReadResult[]) => void) => open.subscribe(listener)),
       onFileChanged: vi.fn((listener: (event: FileChangedEvent) => void) => changed.subscribe(listener)),
-      onCloseRequested: vi.fn((listener: () => void) => close.subscribe(listener)),
+      onCloseRequested: vi.fn((listener: (reason: CloseReason) => void) => close.subscribe(listener)),
     },
     update: {
       check: vi.fn(() => Promise.resolve(state.updateCheck)),
@@ -232,7 +233,7 @@ export function createFakeApi(files: readonly FileReadResult[] = []): FakeApi {
       menuCommand: (command, arg) => menu.emit(command, arg),
       openFiles: (items) => open.emit(items),
       fileChanged: (event) => changed.emit(event),
-      closeRequested: () => close.emit(),
+      closeRequested: (reason = 'user') => close.emit(reason),
       settingsChanged: (settings) => settingsChanged.emit(settings),
       updateAvailable: (update) => updateAvailable.emit(update),
       updateProgress: (progress) => updateProgress.emit(progress),

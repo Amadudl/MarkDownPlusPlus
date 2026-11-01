@@ -417,7 +417,7 @@ describe('AppWindow', () => {
       fake.close();
       expect(fake.destroyed).toBe(false);
       expect(window.isClosePending).toBe(true);
-      expect(fake.webContents.send).toHaveBeenCalledWith(IpcChannel.CloseRequested);
+      expect(fake.webContents.send).toHaveBeenCalledWith(IpcChannel.CloseRequested, 'user');
       fake.close();
       expect(fake.webContents.send).toHaveBeenCalledTimes(1);
       window.confirmClose();
@@ -427,6 +427,17 @@ describe('AppWindow', () => {
       const saved = JSON.parse(await readFile(join(dir, 'window-state.json'), 'utf8')) as unknown;
       expect(saved).toEqual({ x: 10, y: 20, width: 900, height: 700, isMaximized: false });
       window.confirmClose();
+    });
+
+    it('tells the renderer when an update install caused the close', () => {
+      let reason: 'user' | 'update' = 'update';
+      const { window, fake } = open({ closeReason: () => reason });
+      fake.close();
+      expect(fake.webContents.send).toHaveBeenCalledExactlyOnceWith(IpcChannel.CloseRequested, 'update');
+      window.cancelClose();
+      reason = 'user';
+      fake.close();
+      expect(fake.webContents.send).toHaveBeenLastCalledWith(IpcChannel.CloseRequested, 'user');
     });
 
     it('force-closes an unresponsive renderer after the timeout', () => {
