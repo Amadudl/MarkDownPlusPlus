@@ -7,6 +7,7 @@ import { setAdapter } from '@renderer/store/adapters';
 import { selectActiveDocument, useDocuments } from '@renderer/store/documents';
 import { useSettings } from '@renderer/store/settings';
 import { useUi } from '@renderer/store/ui';
+import { useUpdate } from '@renderer/store/update';
 import {
   bindMenuCommands,
   createCommandDefinitions,
@@ -160,6 +161,14 @@ describe('command definitions', () => {
     expect(useUi.getState().dialog).toBe('about');
     await executeCommand(CommandId.HelpDocumentation);
     expect(api.app.openExternal).toHaveBeenCalledWith(DOCUMENTATION_URL);
+    await executeCommand(CommandId.HelpCheckForUpdates);
+    expect(api.update.check).toHaveBeenCalledTimes(1);
+    expect(useUpdate.getState().notice).toEqual({ kind: 'up-to-date', currentVersion: '1.0.0' });
+    expect(listCommands().find((command) => command.id === CommandId.HelpCheckForUpdates)).toMatchObject({
+      label: 'Check for Updates…',
+      category: 'Help',
+      inPalette: true,
+    });
   });
 
   it('executes commands sent by the native menu', async () => {

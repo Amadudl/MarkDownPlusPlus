@@ -16,6 +16,6 @@ describe('preload entry', () => {
       Record<string, unknown>,
     ];
     expect(key).toBe('mpp');
-    expect(Object.keys(api).sort()).toEqual(['app', 'file', 'recent', 'session', 'settings']);
+    expect(Object.keys(api).sort()).toEqual(['app', 'file', 'recent', 'session', 'settings', 'update']);
   });
 });

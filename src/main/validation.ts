@@ -53,6 +53,12 @@ export const sessionStateSchema = z.object({
   activePath: absolutePathSchema.nullable(),
 });
 
+/** A release version as reported by the update check (`major.minor.patch`). */
+export const updateVersionSchema = z
+  .string()
+  .max(32)
+  .regex(/^(0|[1-9]\d{0,8})\.(0|[1-9]\d{0,8})\.(0|[1-9]\d{0,8})$/, 'Expected a version such as 1.2.3');
+
 const sectionPatchSchema = z.record(z.string().max(64), z.unknown()).optional();
 
 /**

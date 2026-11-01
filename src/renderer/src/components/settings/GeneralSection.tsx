@@ -36,6 +36,16 @@ export function GeneralSection(): JSX.Element {
         />
       </SettingRow>
       <SettingRow
+        label="Check for updates at startup"
+        description="Once per launch, ask GitHub whether a newer version exists (a plain HTTPS request, no telemetry). Help → Check for Updates works either way."
+      >
+        <Toggle
+          label="Check for updates at startup"
+          checked={general.checkForUpdatesOnStartup}
+          onChange={(checkForUpdatesOnStartup) => void update({ general: { checkForUpdatesOnStartup } })}
+        />
+      </SettingRow>
+      <SettingRow
         label="Load remote images"
         description="Allow images from https:// addresses. Off by default: a remote image tells its server when and from where you opened the document. Local images always load."
       >

@@ -1,6 +1,6 @@
 import { app, BrowserWindow, dialog, nativeTheme, screen, session } from 'electron';
 import { CommandId, type CommandIdValue } from '../shared/commands';
-import { IpcChannel } from '../shared/ipc';
+import { IpcChannel, type IpcChannelName } from '../shared/ipc';
 import type { AppInfo, FileReadResult } from '../shared/types';
 import { registerIpcHandlers } from './ipc';
 import { extractFileArgs, PendingFileQueue } from './launch';
@@ -22,6 +22,14 @@ import { PathRegistry } from './services/pathRegistry';
 import { RecentFiles } from './services/recentFiles';
 import { SessionStore } from './services/sessionStore';
 import { SettingsStore } from './services/settingsStore';
+import type { UpdateService } from './services/updateService';
+import {
+  createUpdateService,
+  resolveUpdateApiUrl,
+  scheduleStartupUpdateCheck,
+  STARTUP_CHECK_DELAY_MS,
+  type UpdateApiLocation,
+} from './updates';
 import { AppWindow, initialBackgroundColor } from './window';
 
 /** Windows taskbar grouping id; must match `appId` of the installer configuration. */
@@ -56,13 +64,17 @@ export function resolveDevServerUrl(
 export class Application {
   private readonly pending = new PendingFileQueue();
   private readonly security: SecurityOptions;
+  private readonly updateApi: UpdateApiLocation;
   private services: Services | null = null;
+  private updates: UpdateService | null = null;
   private quitting = false;
   private isPortable = false;
   private sandboxChecked = false;
+  private updateCheckScheduled = false;
 
   constructor(private readonly platform: NodeJS.Platform = process.platform) {
     this.security = { devServerUrl: resolveDevServerUrl(process.env, app.isPackaged) };
+    this.updateApi = resolveUpdateApiUrl(process.env, app.isPackaged);
   }
 
   /**
@@ -94,22 +106,48 @@ export class Application {
       settled: () => services.settings.whenIdle(),
       devServerUrl: this.security.devServerUrl,
     });
+    const updates = createUpdateService(this.updateApi, {
+      onProgress: (progress) => this.broadcast(IpcChannel.UpdateProgress, progress),
+      requestQuit: () => app.quit(),
+    });
+    this.updates = updates;
     registerIpcHandlers({
       ...services,
+      updates,
       appInfo: this.appInfo(),
       devServerUrl: this.security.devServerUrl,
       takePendingFiles: () => {
         this.checkSandboxOnce();
+        this.scheduleUpdateCheckOnce(services, updates);
         return this.readForOpening(services, this.pending.take());
       },
     });
     this.installMenu(services);
     services.recent.onChange(() => this.installMenu(services));
-    services.settings.onChange((settings) => {
-      for (const window of AppWindow.all()) window.send(IpcChannel.SettingsChanged, settings);
-    });
+    services.settings.onChange((settings) => this.broadcast(IpcChannel.SettingsChanged, settings));
     this.createWindow(services);
     return true;
+  }
+
+  private broadcast(channel: IpcChannelName, payload: unknown): void {
+    for (const window of AppWindow.all()) window.send(channel, payload);
+  }
+
+  /**
+   * Schedules the background update check once per launch, when the first
+   * renderer is ready to show its result. Development builds only check when the
+   * E2E stub (`MPP_UPDATE_API_URL`) is configured, so tests never reach GitHub.
+   */
+  private scheduleUpdateCheckOnce(services: Services, updates: UpdateService): void {
+    if (this.updateCheckScheduled) return;
+    this.updateCheckScheduled = true;
+    if (!app.isPackaged && !this.updateApi.overridden) return;
+    scheduleStartupUpdateCheck({
+      delayMs: STARTUP_CHECK_DELAY_MS,
+      enabled: () => services.settings.get().general.checkForUpdatesOnStartup,
+      check: () => updates.check(),
+      announce: (update) => this.broadcast(IpcChannel.UpdateAvailable, update),
+    });
   }
 
   /**
@@ -148,6 +186,11 @@ export class Application {
     });
     app.on('before-quit', () => {
       this.quitting = true;
+    });
+    // Every window has closed (unsaved changes were handled by the close handshake):
+    // only now may a downloaded update start its installer or relaunch.
+    app.on('will-quit', () => {
+      this.updates?.runPendingInstall();
     });
     app.on('window-all-closed', () => {
       if (this.platform !== 'darwin' || this.quitting) app.quit();
@@ -232,9 +275,11 @@ export class Application {
       platform: this.platform,
       devTools: !app.isPackaged,
       onClosed: (closed) => services.watcher.unwatchOwner(closed.id),
-      // Keeping a window open aborts a pending quit (Cmd+Q / app.quit()).
+      // Keeping a window open aborts a pending quit (Cmd+Q / app.quit()) and the
+      // update install that was waiting for it.
       onCloseCancelled: () => {
         this.quitting = false;
+        this.updates?.cancelPendingInstall();
       },
     });
     window.load().catch((error: unknown) => console.error('Failed to load the application window:', error));

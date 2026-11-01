@@ -16,6 +16,7 @@ import {
   saveDocumentAs,
 } from './documentActions';
 import type { CommandCategory, CommandDefinition } from './registry';
+import { checkForUpdates } from './updates';
 import {
   resetZoom,
   runFormat,
@@ -120,6 +121,7 @@ const SPECS: Readonly<Record<CommandIdValue, Spec>> = {
   [CommandId.HelpDocumentation]: simple('Help', 'Documentation', () =>
     getApi().app.openExternal(DOCUMENTATION_URL),
   ),
+  [CommandId.HelpCheckForUpdates]: simple('Help', 'Check for Updates…', checkForUpdates),
 };
 
 /** Builds the definition of every command id declared in `@shared/commands`. */

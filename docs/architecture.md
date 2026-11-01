@@ -8,7 +8,7 @@ contract.
 ┌──────────────────────────── Main process (Node) ────────────────────────────┐
 │ src/main      window lifecycle · application menu · file I/O · settings    │
 │               store · recent files · session · file watching · export      │
-│               custom protocols · security hardening                        │
+│               custom protocols · security hardening · updates              │
 └───────────────▲─────────────────────────────────────────────▲──────────────┘
                 │ ipcRenderer.invoke / webContents.send       │
 ┌───────────────┴──── Preload (sandboxed, contextBridge) ─────┴──────────────┐
@@ -25,16 +25,16 @@ contract.
 
 ## Shared contract (`src/shared`)
 
-| File             | Purpose                                                                          |
-| ---------------- | -------------------------------------------------------------------------------- |
-| `ipc.ts`         | Every IPC channel name. Never use string literals for channels.                  |
-| `ipc-result.ts`  | `IpcResult` envelope (`ok` + `value`, or `code` + `message`) of invoke channels. |
-| `types.ts`       | `MppApi` (the `window.mpp` surface) and all DTOs crossing the process boundary.  |
-| `commands.ts`    | Stable command ids shared by menu, palette, toolbar and shortcuts.               |
-| `shortcuts.ts`   | Default shortcuts (`SHORTCUTS`), macOS overrides and `shortcutsFor(platform)`.   |
-| `file-url.ts`    | `mpp-file:` URL conversion and `resolveImageSrc` (remote-image policy).          |
-| `settings.ts`    | zod schema, defaults, tolerant parsing and patching of persisted settings.       |
-| `theme-model.ts` | zod schemas of UI themes, code themes and element styles (user-editable data).   |
+| File             | Purpose                                                                                                                                         |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ipc.ts`         | Every IPC channel name (incl. `update:check`, `update:install`, `update:available`, `update:progress`). Never use string literals for channels. |
+| `ipc-result.ts`  | `IpcResult` envelope (`ok` + `value`, or `code` + `message`) of invoke channels; `network` for failed update requests.                          |
+| `types.ts`       | `MppApi` (the `window.mpp` surface) and all DTOs crossing the process boundary, incl. `UpdateInfo`, `UpdateCheckResult`, `UpdateProgress`.      |
+| `commands.ts`    | Stable command ids shared by menu, palette, toolbar and shortcuts.                                                                              |
+| `shortcuts.ts`   | Default shortcuts (`SHORTCUTS`), macOS overrides and `shortcutsFor(platform)`.                                                                  |
+| `file-url.ts`    | `mpp-file:` URL conversion and `resolveImageSrc` (remote-image policy).                                                                         |
+| `settings.ts`    | zod schema, defaults, tolerant parsing and patching of persisted settings.                                                                      |
+| `theme-model.ts` | zod schemas of UI themes, code themes and element styles (user-editable data).                                                                  |
 
 `src/shared` must stay free of Node and DOM APIs so it can be imported by all layers.
 
@@ -68,7 +68,21 @@ contract.
   `fileWatcher`, `exporter` (PDF via `printToPDF` and PNG via `imageCapture` — DevTools
   protocol screenshots in tiles of at most 8192 device pixels, stitched losslessly — both
   in a hidden (`show: false`), sandboxed, JavaScript-disabled `BrowserWindow` on a
-  locked-down session).
+  locked-down session), and the update function: `updateCore` (pure rules: SemVer
+  comparison, zod validation of the GitHub release, asset choice per platform,
+  architecture and install type, URL allowlists, `SHA256SUMS.txt` parser), `httpClient`
+  (GET over Electron `net` with manual, allowlisted redirects, size limit and idle
+  timeout) and `updateService` (check, streamed download with SHA-256 verification,
+  install). `updates.ts` wires it to Electron and schedules the background check.
+- Updates (`updateService`, see [SECURITY.md](../SECURITY.md#updates)): the only network
+  access of the main process. `UpdateCheck` asks
+  `api.github.com/repos/Amadudl/MarkDownPlusPlus/releases/latest`; `UpdateInstall` takes
+  only the version the check reported and downloads the matching package of **that**
+  release from `github.com` (redirects only to `release-assets.githubusercontent.com` /
+  `objects.githubusercontent.com`). Nothing is opened or executed before its SHA-256
+  matches the release's `SHA256SUMS.txt`. A Windows setup or an AppImage relaunch is
+  armed as a pending install and runs on `will-quit`, after the close handshake of every
+  window; a cancelled close drops it and sends `UpdateProgress` `cancelled`.
 - `menu.ts` — native application menu; every item sends a `CommandId` to the renderer.
 - `keyboard.ts` — deterministic shortcut routing: every key press of an app window is
   matched against the platform's shortcut table (`shortcutsFor(platform)`, i.e.
@@ -160,6 +174,11 @@ wraps both the live WYSIWYG editor and exported HTML, so the export looks like t
     other file).
 - Raw HTML inside markdown is never executed; exported HTML is sanitised with DOMPurify.
 - External links open in the OS browser only for allowlisted schemes.
+- Network: apart from remote images (off by default), the main process only contacts
+  `api.github.com` for the update check (`general.checkForUpdatesOnStartup`, on by default,
+  and Help → Check for Updates) and the allowlisted GitHub download hosts for an install
+  the user started. Downloads are verified with SHA-256 against the release's
+  `SHA256SUMS.txt` before they are opened or executed; no telemetry is sent.
 
 ## Further reading
 

@@ -387,6 +387,107 @@
   }
 }
 
+/* ---------------------------------------------------------- update notice */
+.update-notice {
+  position: fixed;
+  z-index: 190;
+  left: var(--mpp-space-4);
+  bottom: calc(var(--mpp-statusbar-height) + var(--mpp-space-3));
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mpp-space-3);
+  width: min(400px, calc(100vw - 32px));
+  padding: var(--mpp-space-3);
+  border: 1px solid var(--mpp-ui-border);
+  border-radius: var(--mpp-radius-lg);
+  background: var(--mpp-ui-surface-elevated);
+  box-shadow: var(--mpp-shadow-lg);
+  animation: mpp-toast-in var(--mpp-duration-slow) var(--mpp-ease-spring);
+}
+
+.update-notice-icon {
+  flex: none;
+  margin-top: 1px;
+  color: var(--mpp-ui-accent);
+}
+
+.update-notice-icon.is-error {
+  color: var(--mpp-ui-danger);
+}
+
+.update-notice-icon.is-spinning {
+  animation: mpp-update-spin 1s linear infinite;
+}
+
+.update-notice-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--mpp-space-2);
+  min-width: 0;
+  font-size: var(--mpp-text-sm);
+  overflow-wrap: anywhere;
+}
+
+.update-notice-title {
+  font-weight: 600;
+}
+
+.update-notice-hint {
+  color: var(--mpp-ui-text-muted);
+}
+
+.update-notice-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--mpp-ui-accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.update-notice-progress {
+  width: 100%;
+  height: 6px;
+  accent-color: var(--mpp-ui-accent);
+}
+
+.update-notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mpp-space-2);
+  margin-top: var(--mpp-space-1);
+}
+
+.update-notice-dismiss {
+  display: inline-flex;
+  flex: none;
+  padding: 2px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--mpp-ui-text-faint);
+}
+
+.update-notice-dismiss:hover {
+  background: var(--mpp-hover);
+  color: var(--mpp-ui-text);
+}
+
+@keyframes mpp-update-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .update-notice,
+  .update-notice-icon.is-spinning {
+    animation: none;
+  }
+}
+
 /* ----------------------------------------------------------- drop overlay */
 .drop-overlay {
   position: fixed;

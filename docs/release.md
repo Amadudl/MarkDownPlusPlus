@@ -64,6 +64,17 @@ sections _Added_, _Changed_, _Deprecated_, _Removed_, _Fixed_, _Security_.
 | Windows | `-setup.exe` (NSIS) and `-portable.exe` for `x64` and `arm64`      |
 | Linux   | `AppImage`, `deb`, `tar.gz` for `x64` and `arm64`; `rpm` for `x64` |
 
+The in-app update function (`src/main/services/updateCore.ts`) depends on this layout:
+it finds the package for an installation by its exact file name
+(`MarkDownPlusPlus-<version>-win-<arch>-setup.exe`, `-mac-<arch>.dmg`,
+`-linux-<x86_64|arm64>.AppImage`, from `artifactName` in `electron-builder.yml`), takes
+the version from the tag (`v<major>.<minor>.<patch>`) and refuses to install a file that
+has no matching line in the release's `SHA256SUMS.txt` (`sha256sum` format). **Do not
+rename the artifacts, change the tag format or drop `SHA256SUMS.txt`**; an installation
+would then only be offered the release page. A release becomes visible to the update
+check when it is published (drafts and pre-releases are ignored), so publish it only after
+`SHA256SUMS.txt` is attached.
+
 A release can also be started manually with **Actions → Release → Run workflow**; the tag
 check is skipped in that case, and artifacts are attached to a draft release for the
 current `package.json` version. No draft is created up front for manual runs, so check

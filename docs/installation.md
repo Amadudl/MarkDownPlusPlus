@@ -241,6 +241,15 @@ Outside portable mode, data lives in Electron's standard per-user directory:
 The folder also contains Chromium's cache. Deleting the folder resets MarkDown++ to its
 defaults. Your documents are never stored there.
 
+## Updating
+
+MarkDown++ checks GitHub for a new release once per launch and on **Help → Check for
+Updates…**. The Windows installer, the macOS disk image and the AppImage can install an
+update from the app after its SHA-256 checksum was verified; the portable Windows build
+and the `.deb`, `.rpm` and `.tar.gz` packages open the release page instead (update
+`.deb`/`.rpm` installations with your package manager or by installing the new package).
+Your settings are kept. See [Updates](user-guide.md#updates) in the user guide.
+
 ## Uninstalling
 
 | Build             | How to uninstall                                                            |

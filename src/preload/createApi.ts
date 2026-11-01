@@ -3,7 +3,14 @@ import { isCommandId, type CommandIdValue } from '../shared/commands';
 import { IpcChannel, type IpcChannelName } from '../shared/ipc';
 import { unwrapIpcResult } from '../shared/ipc-result';
 import type { Settings } from '../shared/settings';
-import type { FileChangedEvent, FileReadResult, MppApi, Unsubscribe } from '../shared/types';
+import type {
+  FileChangedEvent,
+  FileReadResult,
+  MppApi,
+  Unsubscribe,
+  UpdateInfo,
+  UpdateProgress,
+} from '../shared/types';
 
 /** The parts of `ipcRenderer` the API needs (narrow for testability). */
 export type IpcRendererLike = Pick<IpcRenderer, 'invoke' | 'sendSync' | 'on' | 'removeListener'>;
@@ -101,6 +108,14 @@ export function createMppApi(ipc: IpcRendererLike, webUtils: WebUtilsLike): MppA
       onFileChanged: (listener) =>
         subscribe(IpcChannel.FileChangedOnDisk, (event) => listener(event as FileChangedEvent)),
       onCloseRequested: (listener) => subscribe(IpcChannel.CloseRequested, () => listener()),
+    },
+    update: {
+      check: () => invoke(IpcChannel.UpdateCheck),
+      install: (version) => invoke(IpcChannel.UpdateInstall, version),
+      onAvailable: (listener) =>
+        subscribe(IpcChannel.UpdateAvailable, (update) => listener(update as UpdateInfo)),
+      onProgress: (listener) =>
+        subscribe(IpcChannel.UpdateProgress, (progress) => listener(progress as UpdateProgress)),
     },
   };
 }

@@ -132,10 +132,53 @@ arbitrary files** (a document can only _display_ local image files, see
 - Release signing credentials are scoped to the single packaging step that needs them,
   and the release packaging job installs dependencies without lifecycle scripts.
 
+### Updates
+
+The update function (`src/main/services/updateService.ts`, user guide:
+[Updates](docs/user-guide.md#updates)) is the only network access MarkDown++ makes on
+its own. It is implemented without third-party code, on Electron's `net` module and
+Node's `crypto`.
+
+- **What is contacted:** the check sends one `GET` to
+  `https://api.github.com/repos/Amadudl/MarkDownPlusPlus/releases/latest` (10 s time
+  limit, at most 2 MB, `User-Agent: MarkDownPlusPlus/<version>`). GitHub sees your IP
+  address and the app version, as with any download. No telemetry, identifiers or
+  document data are sent. The requests use a separate in-memory session without
+  cookies or credentials.
+- **When:** once per launch, a few seconds after startup, unless
+  **Settings → General → Check for updates at startup** (`general.checkForUpdatesOnStartup`)
+  is off, and whenever you choose **Help → Check for Updates**. Development builds never
+  check in the background.
+- **What is downloaded:** only files of the release the main process fetched itself; the
+  renderer passes no URL, only the version it was shown. Release data is validated with
+  zod; download URLs must be exactly
+  `https://github.com/Amadudl/MarkDownPlusPlus/releases/download/<tag>/<file>`. Every
+  redirect is checked before it is followed against an allowlist (default deny) of
+  `https:` hosts: `github.com`, `release-assets.githubusercontent.com` and
+  `objects.githubusercontent.com`. Downloads are limited to the size GitHub reports for
+  the file (at most 600 MB) and abort after 30 s without data.
+- **Verification:** before anything is opened or executed, the SHA-256 checksum of the
+  download must match the entry for that file in the `SHA256SUMS.txt` of the same
+  release. A mismatch, a missing entry or an incomplete download deletes the file.
+  This protects against corrupted and tampered downloads from the storage hosts; it does
+  not protect against a compromised GitHub repository or release (the checksum file
+  comes from the same release), which is why the releases also carry build provenance
+  attestations you can verify by hand.
+- **Installing:** a Windows NSIS installation runs the verified setup with
+  `/S --updated --force-run` only after the app has quit through the normal close flow
+  (unsaved changes are asked about; keeping a document open cancels the install). macOS
+  opens the verified disk image; you replace the app yourself. A Linux AppImage is
+  replaced atomically (written next to it, made executable, renamed over it) and
+  relaunched. Portable builds and `.deb`/`.rpm`/`.tar.gz` installations only open the
+  release page through the external URL allowlist.
+- **Test hook:** `MPP_UPDATE_API_URL` replaces the API URL only in unpackaged builds and
+  only with a loopback address (E2E tests); packaged builds ignore it.
+
 ### Data
 
-- MarkDown++ does not collect telemetry and makes no network requests on its own. The
-  only network access is loading remote images in documents, which is **off by
+- MarkDown++ does not collect telemetry. Apart from the [update check](#updates), which
+  you can turn off, it makes no network requests on its own. The only other network
+  access is loading remote images in documents, which is **off by
   default** (`rendering.loadRemoteImages`): a remote image would tell its server when,
   from which IP address and with which browser version you opened a document (a
   tracking pixel). Enable it only if you trust the documents you open. The setting is

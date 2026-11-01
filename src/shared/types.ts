@@ -119,6 +119,52 @@ export interface FileChangedEvent {
 export type Unsubscribe = () => void;
 
 /**
+ * How the running installation can be updated in place:
+ * - `installer`: Windows NSIS installation; the new setup runs silently after the app quit;
+ * - `disk-image`: macOS; the new `.dmg` is opened and the user drags the app into Applications;
+ * - `appimage`: Linux AppImage; the AppImage file is replaced and the app restarts;
+ * - `manual`: anything else (Windows portable, `.deb`, `.rpm`, `.tar.gz`, development
+ *   builds, unknown architectures); the release page is opened in the browser.
+ */
+export type UpdateInstallMode = 'installer' | 'disk-image' | 'appimage' | 'manual';
+
+/** A newer release found by the update check. Every URL was validated by the main process. */
+export interface UpdateInfo {
+  /** Version of the release (`major.minor.patch`). */
+  readonly version: string;
+  /** Version of the running app. */
+  readonly currentVersion: string;
+  /** Title of the GitHub release. */
+  readonly releaseName: string;
+  /** Release page on github.com (release notes and all downloads). */
+  readonly releaseUrl: string;
+  /** Publication time (ISO 8601), if GitHub reported one. */
+  readonly publishedAt: string | null;
+  readonly installMode: UpdateInstallMode;
+  /** Size in bytes of the file that will be downloaded, or `null` for `manual`. */
+  readonly downloadSize: number | null;
+}
+
+/** Result of `update.check()`. */
+export type UpdateCheckResult =
+  | { readonly status: 'up-to-date'; readonly currentVersion: string; readonly latestVersion: string }
+  | { readonly status: 'available'; readonly update: UpdateInfo };
+
+/**
+ * What `update.install()` did: `restarting` means the app quits now to finish the update
+ * (and starts again); `disk-image-opened` means the macOS disk image was opened;
+ * `release-page-opened` means the release page was opened in the browser.
+ */
+export type UpdateInstallOutcome = 'restarting' | 'disk-image-opened' | 'release-page-opened';
+
+/** Progress of `update.install()`, sent while it runs (and if a pending install is cancelled). */
+export type UpdateProgress =
+  | { readonly phase: 'downloading'; readonly receivedBytes: number; readonly totalBytes: number }
+  | { readonly phase: 'verifying' }
+  /** The app did not quit (a document was kept open), so the update was not finished. */
+  | { readonly phase: 'cancelled'; readonly message: string };
+
+/**
  * The complete API exposed to the renderer through `contextBridge` as
  * `window.mpp`. Every method validates its inputs on the main side as well.
  * A failed request rejects with an `Error` whose message is written for the
@@ -187,5 +233,21 @@ export interface MppApi {
     onOpenFiles(listener: (files: FileReadResult[]) => void): Unsubscribe;
     onFileChanged(listener: (event: FileChangedEvent) => void): Unsubscribe;
     onCloseRequested(listener: () => void): Unsubscribe;
+  };
+  /**
+   * In-app updates from the GitHub releases of the project. The main process
+   * decides what is downloaded; the renderer never passes a URL.
+   */
+  readonly update: {
+    /** Asks GitHub for the latest release. Rejects with a user-facing message on failure. */
+    check(): Promise<UpdateCheckResult>;
+    /**
+     * Downloads, verifies (SHA-256) and installs the release found by the last
+     * {@link check}; `version` must be the version it reported.
+     */
+    install(version: string): Promise<UpdateInstallOutcome>;
+    /** Fires when the background check at startup found a newer release. */
+    onAvailable(listener: (update: UpdateInfo) => void): Unsubscribe;
+    onProgress(listener: (progress: UpdateProgress) => void): Unsubscribe;
   };
 }

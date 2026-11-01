@@ -51,6 +51,7 @@ export function buildMenuTemplate(context: MenuContext): Item[] {
     label: context.appName,
     submenu: [
       command(`About ${context.appName}`, CommandId.HelpAbout),
+      command('Check for Updates…', CommandId.HelpCheckForUpdates),
       separator,
       command('Settings…', CommandId.SettingsOpen),
       separator,
@@ -182,6 +183,7 @@ export function buildMenuTemplate(context: MenuContext): Item[] {
       command('Documentation', CommandId.HelpDocumentation),
       command('Keyboard Shortcuts', CommandId.HelpShortcuts),
       separator,
+      command('Check for Updates…', CommandId.HelpCheckForUpdates),
       { label: 'Report an Issue…', click: () => context.openExternal(ISSUES_URL) },
       ...(mac ? [] : [separator, command(`About ${context.appName}`, CommandId.HelpAbout)]),
     ],

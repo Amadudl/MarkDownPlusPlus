@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { IpcValidationError, isSystemError, toIpcFailure } from './ipcErrors';
 import { FileAccessError } from './services/fileService';
 import { InvalidSettingsError } from './services/settingsStore';
+import { UpdateError } from './services/updateCore';
 
 function systemError(code: string, path?: string): NodeJS.ErrnoException {
   return Object.assign(new Error(`${code}: failed`), { code, ...(path === undefined ? {} : { path }) });
@@ -48,6 +49,16 @@ describe('toIpcFailure', () => {
       ok: false,
       code: 'invalid-argument',
       message: 'Invalid settings: zoom too big',
+    });
+  });
+
+  it('reports failed update checks and downloads as network failures', () => {
+    expect(
+      toIpcFailure('update:check', new UpdateError('The connection to api.github.com timed out.')),
+    ).toEqual({
+      ok: false,
+      code: 'network',
+      message: 'The connection to api.github.com timed out.',
     });
   });
 

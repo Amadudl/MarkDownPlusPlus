@@ -55,6 +55,33 @@ describe('DEFAULT_SETTINGS', () => {
     expect(DEFAULT_SETTINGS.editor).toMatchObject({ defaultMode: 'wysiwyg', tabSize: 2, autoSave: 'off' });
     expect(DEFAULT_SETTINGS.general).toMatchObject({ confirmOnClose: true, showStatusBar: true });
   });
+
+  it('checks for updates at startup by default', () => {
+    expect(DEFAULT_SETTINGS.general.checkForUpdatesOnStartup).toBe(true);
+  });
+});
+
+describe('general.checkForUpdatesOnStartup', () => {
+  it('keeps settings files written before the setting existed valid', () => {
+    const parsed = parseSettings({ version: SETTINGS_VERSION, general: { confirmOnClose: false } });
+    expect(parsed.general).toMatchObject({ confirmOnClose: false, checkForUpdatesOnStartup: true });
+  });
+
+  it('falls back to the default for an invalid value without touching the other fields', () => {
+    const parsed = parseSettings({ general: { checkForUpdatesOnStartup: 'never', showWelcome: false } });
+    expect(parsed.general).toMatchObject({ checkForUpdatesOnStartup: true, showWelcome: false });
+  });
+
+  it('can be switched off by a patch and rejects non-boolean values', () => {
+    const off = applySettingsPatch(DEFAULT_SETTINGS, { general: { checkForUpdatesOnStartup: false } });
+    expect(off.general.checkForUpdatesOnStartup).toBe(false);
+    expect(parseSettings(off).general.checkForUpdatesOnStartup).toBe(false);
+    expect(() =>
+      applySettingsPatch(DEFAULT_SETTINGS, {
+        general: { checkForUpdatesOnStartup: 'no' as unknown as boolean },
+      }),
+    ).toThrow();
+  });
 });
 
 describe('parseSettings', () => {

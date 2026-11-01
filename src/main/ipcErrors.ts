@@ -1,6 +1,7 @@
 import type { IpcErrorCode, IpcFailure } from '../shared/ipc-result';
 import { FileAccessError } from './services/fileService';
 import { InvalidSettingsError } from './services/settingsStore';
+import { UpdateError } from './services/updateCore';
 
 /** Thrown when an IPC request is refused; `code` tells the renderer why. */
 export class IpcValidationError extends Error {
@@ -68,7 +69,8 @@ function describeSystemError(code: IpcErrorCode, errno: string, path: string | u
 /**
  * Converts anything a handler threw into an {@link IpcFailure}. Policy
  * refusals ({@link FileAccessError}, {@link IpcValidationError}), rejected
- * settings ({@link InvalidSettingsError}) and file system errors are expected
+ * settings ({@link InvalidSettingsError}), failed update checks and downloads
+ * ({@link UpdateError}) and file system errors are expected
  * and become user-facing messages silently; anything else is a bug or a
  * genuine malfunction (e.g. a PDF render timing out), so it is logged with its
  * stack and reported as `internal`.
@@ -79,6 +81,9 @@ export function toIpcFailure(channel: string, error: unknown): IpcFailure {
   }
   if (error instanceof InvalidSettingsError) {
     return { ok: false, code: 'invalid-argument', message: error.message };
+  }
+  if (error instanceof UpdateError) {
+    return { ok: false, code: 'network', message: error.message };
   }
   if (isSystemError(error)) {
     const code = ERRNO_CODES[error.code] ?? 'io';

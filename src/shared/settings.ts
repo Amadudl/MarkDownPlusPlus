@@ -54,6 +54,12 @@ export const generalSettingsSchema = z.object({
   showWelcome: z.boolean().default(true),
   showOutline: z.boolean().default(false),
   showStatusBar: z.boolean().default(true),
+  /**
+   * Ask GitHub once per launch, a few seconds after startup, whether a newer
+   * release exists (a plain HTTPS request to api.github.com, no telemetry).
+   * Help → Check for Updates works regardless of this setting.
+   */
+  checkForUpdatesOnStartup: z.boolean().default(true),
 });
 
 export const settingsSchema = z.object({

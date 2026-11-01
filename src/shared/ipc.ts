@@ -31,6 +31,8 @@ export const IpcChannel = {
   CloseReady: 'window:close-ready',
   CloseCancelled: 'window:close-cancelled',
   TakePendingFiles: 'app:take-pending-files',
+  UpdateCheck: 'update:check',
+  UpdateInstall: 'update:install',
   // renderer -> main (sendSync / on), only sent by the preload itself
   FileGrantDropped: 'file:grant-dropped',
   // main -> renderer (send / on)
@@ -39,6 +41,8 @@ export const IpcChannel = {
   FileChangedOnDisk: 'file:changed-on-disk',
   CloseRequested: 'window:close-requested',
   SettingsChanged: 'settings:changed',
+  UpdateAvailable: 'update:available',
+  UpdateProgress: 'update:progress',
 } as const;
 
 export type IpcChannelName = (typeof IpcChannel)[keyof typeof IpcChannel];

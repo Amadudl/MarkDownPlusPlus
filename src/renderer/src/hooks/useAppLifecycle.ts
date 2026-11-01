@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { bindMenuCommands, registerDefaultCommands } from '@renderer/commands';
 import { startAutoSave } from '@renderer/commands/autosave';
 import { startFileWatching } from '@renderer/commands/fileWatching';
+import { bindUpdateEvents } from '@renderer/commands/updates';
 import { bindAppEvents, startSessionPersistence, startup } from '@renderer/commands/session';
 import { startAppearanceSync, startWindowTitleSync } from '@renderer/commands/windowSync';
 import { applyPlatformClass } from '@renderer/platform/platform';
@@ -10,7 +11,8 @@ import { toastError, useUi, watchSystemColorScheme } from '@renderer/store/ui';
 
 /**
  * Wires the shell to the main process for the lifetime of the app: commands,
- * menu, OS events, file watching, auto save, window title and appearance, then
+ * menu, OS events, file watching, auto save, window title and appearance, update
+ * notifications, then
  * runs the startup sequence and keeps the session persisted.
  */
 export function useAppLifecycle(): void {
@@ -32,6 +34,7 @@ export function useAppLifecycle(): void {
       startFileWatching(),
       startAutoSave(),
       startWindowTitleSync(),
+      bindUpdateEvents(),
     ];
     // The startup sequence runs once, even when React re-runs this effect (StrictMode),
     // and only after every listener above is bound. The session is persisted continuously

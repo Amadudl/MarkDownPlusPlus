@@ -76,6 +76,8 @@ describe('createMppApi', () => {
       [api.app.closeReady(), IpcChannel.CloseReady],
       [api.app.closeCancelled(), IpcChannel.CloseCancelled],
       [api.app.takePendingFiles(), IpcChannel.TakePendingFiles],
+      [api.update.check(), IpcChannel.UpdateCheck],
+      [api.update.install('1.2.3'), IpcChannel.UpdateInstall, '1.2.3'],
     ];
     for (const [promise] of calls) await expect(promise).resolves.toBe('result');
     expect(invoke.mock.calls).toEqual(calls.map(([, channel, ...args]) => [channel, ...args]));
@@ -118,12 +120,20 @@ describe('createMppApi', () => {
     const files = vi.fn();
     const changed = vi.fn();
     const close = vi.fn();
+    const available = vi.fn();
+    const progress = vi.fn();
     const unsubscribers = [
       api.settings.onChanged(settings),
       api.app.onOpenFiles(files),
       api.app.onFileChanged(changed),
       api.app.onCloseRequested(close),
+      api.update.onAvailable(available),
+      api.update.onProgress(progress),
     ];
+    emit(IpcChannel.UpdateAvailable, { version: '2.0.0' });
+    emit(IpcChannel.UpdateProgress, { phase: 'verifying' });
+    expect(available).toHaveBeenCalledWith({ version: '2.0.0' });
+    expect(progress).toHaveBeenCalledWith({ phase: 'verifying' });
     emit(IpcChannel.SettingsChanged, DEFAULT_SETTINGS);
     emit(IpcChannel.OpenFiles, [{ path: '/a.md' }]);
     emit(IpcChannel.OpenFiles, 'not an array');
@@ -138,7 +148,7 @@ describe('createMppApi', () => {
       unsubscribe();
       unsubscribe();
     }
-    expect(raw.removeListener).toHaveBeenCalledTimes(4);
+    expect(raw.removeListener).toHaveBeenCalledTimes(6);
     expect(count(IpcChannel.SettingsChanged) + count(IpcChannel.OpenFiles)).toBe(0);
   });
 

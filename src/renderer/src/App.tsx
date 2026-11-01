@@ -12,6 +12,7 @@ import { StatusBar } from './components/StatusBar';
 import { Toasts } from './components/Toasts';
 import { Toolbar } from './components/Toolbar';
 import { TopBar } from './components/TopBar';
+import { UpdateNotice } from './components/UpdateNotice';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { useAppLifecycle } from './hooks/useAppLifecycle';
 import { useFileDrop } from './hooks/useFileDrop';
@@ -62,6 +63,7 @@ export function App(): JSX.Element {
       {dialog === 'shortcuts' && <ShortcutsDialog />}
       {dialog === 'about' && <AboutDialog />}
       <DropOverlay />
+      <UpdateNotice />
       <Toasts />
     </div>
   );

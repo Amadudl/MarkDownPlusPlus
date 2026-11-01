@@ -6,6 +6,7 @@ import { CommandId } from '../shared/commands';
 import { IpcChannel } from '../shared/ipc';
 import type { IpcDependencies } from './ipc';
 import type { MenuContext } from './menu';
+import type { StartupCheckOptions, UpdateHooks } from './updates';
 import type * as WindowModule from './window';
 import type { AppWindowOptions } from './window';
 
@@ -117,6 +118,29 @@ const security = vi.hoisted(() => ({
 vi.mock('./security', () => security);
 const remoteImages = vi.hoisted(() => ({ installRemoteImageGuard: vi.fn() }));
 vi.mock('./remoteImages', () => remoteImages);
+const updates = vi.hoisted(() => ({
+  service: {
+    check: vi.fn(() => Promise.resolve({ status: 'up-to-date' })),
+    install: vi.fn(),
+    runPendingInstall: vi.fn(() => false),
+    cancelPendingInstall: vi.fn(),
+  },
+  hooks: null as UpdateHooks | null,
+  api: { url: 'https://api.github.com/repos/Amadudl/MarkDownPlusPlus/releases/latest', overridden: false },
+  schedules: [] as StartupCheckOptions[],
+}));
+vi.mock('./updates', () => ({
+  STARTUP_CHECK_DELAY_MS: 4000,
+  resolveUpdateApiUrl: () => updates.api,
+  createUpdateService: (_api: unknown, hooks: UpdateHooks) => {
+    updates.hooks = hooks;
+    return updates.service;
+  },
+  scheduleStartupUpdateCheck: (options: StartupCheckOptions) => {
+    updates.schedules.push(options);
+    return () => undefined;
+  },
+}));
 
 const { Application, APP_USER_MODEL_ID, resolveDevServerUrl } = await import('./application');
 
@@ -139,6 +163,13 @@ beforeEach(async () => {
   app.addRecentDocument.mockClear();
   app.commandLine.hasSwitch.mockReturnValue(false);
   dialog.showMessageBox.mockClear();
+  updates.hooks = null;
+  updates.api.overridden = false;
+  updates.schedules = [];
+  updates.service.runPendingInstall.mockClear();
+  updates.service.cancelPendingInstall.mockClear();
+  updates.service.check.mockClear();
+  app.isPackaged = false;
   process.argv = ['/electron'];
   delete process.env.MPP_DEV_SERVER_URL;
 });
@@ -510,6 +541,61 @@ describe('Application', () => {
     windows.FakeAppWindow.list[0]?.close();
     app.emit('activate');
     expect(windows.FakeAppWindow.list[0]?.options.backgroundColor).toBe('#f7f7f8');
+  });
+
+  describe('updates', () => {
+    const info = { version: '9.0.0' };
+
+    it('wires the update service to the windows, the quit and the close handshake', async () => {
+      await new Application('win32').start();
+      expect(deps().updates).toBe(updates.service);
+      const [window] = windows.FakeAppWindow.list;
+      if (!window) throw new Error('window expected');
+      const progress = { phase: 'verifying' } as const;
+      updates.hooks?.onProgress(progress);
+      expect(window.send).toHaveBeenCalledWith(IpcChannel.UpdateProgress, progress);
+      updates.hooks?.requestQuit();
+      expect(app.quit).toHaveBeenCalledTimes(1);
+
+      // A kept-open document cancels the quit and the install waiting for it.
+      window.options.onCloseCancelled?.(window as never);
+      expect(updates.service.cancelPendingInstall).toHaveBeenCalledTimes(1);
+      // Once every window closed, the pending install runs.
+      app.emit('will-quit');
+      expect(updates.service.runPendingInstall).toHaveBeenCalledTimes(1);
+    });
+
+    it('never checks in the background in development builds without the test stub', async () => {
+      await new Application('linux').start();
+      await deps().takePendingFiles();
+      expect(updates.schedules).toHaveLength(0);
+    });
+
+    it('schedules one background check when the first renderer is ready', async () => {
+      app.isPackaged = true;
+      await new Application('linux').start();
+      expect(updates.schedules).toHaveLength(0);
+      await deps().takePendingFiles();
+      await deps().takePendingFiles();
+      expect(updates.schedules).toHaveLength(1);
+      const [schedule] = updates.schedules;
+      if (!schedule) throw new Error('schedule expected');
+      expect(schedule.delayMs).toBe(4000);
+      expect(schedule.enabled()).toBe(true);
+      await deps().settings.set({ general: { checkForUpdatesOnStartup: false } });
+      expect(schedule.enabled()).toBe(false);
+      await schedule.check();
+      expect(updates.service.check).toHaveBeenCalledTimes(1);
+      schedule.announce(info as never);
+      expect(windows.FakeAppWindow.list[0]?.send).toHaveBeenCalledWith(IpcChannel.UpdateAvailable, info);
+    });
+
+    it('checks in the background of a development build pointed at the test stub', async () => {
+      updates.api.overridden = true;
+      await new Application('linux').start();
+      await deps().takePendingFiles();
+      expect(updates.schedules).toHaveLength(1);
+    });
   });
 
   describe('sandbox warning', () => {
