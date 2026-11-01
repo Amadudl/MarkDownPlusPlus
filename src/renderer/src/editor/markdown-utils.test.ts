@@ -174,6 +174,19 @@ describe('extractHeadings', () => {
     expect(extractHeadings('<![CDATA[\n# x\n]]>\n# y').map((heading) => heading.text)).toEqual(['y']);
   });
 
+  it('ends HTML blocks where CommonMark does, also on their first line', () => {
+    const texts = (md: string): string[] => extractHeadings(md).map((heading) => heading.text);
+    // The end string may overlap the start token.
+    expect(texts('<!-->\n# H')).toEqual(['H']);
+    expect(texts('<!--->\n# H')).toEqual(['H']);
+    expect(texts('<?>\n# H')).toEqual(['H']);
+    // `--!>` ends a comment for browsers, but not a CommonMark comment block.
+    expect(texts('<!-- x --!>\n# x\n-->\n# H')).toEqual(['H']);
+    // End tags of type 1 blocks are matched case-insensitively and must be exact.
+    expect(texts('<script>\n# x\n</SCRIPT>\n# H')).toEqual(['H']);
+    expect(texts('<script>\n# x\n</script >\n# y')).toEqual([]);
+  });
+
   it('treats a lone tag as an HTML block only when it does not interrupt a paragraph', () => {
     expect(extractHeadings('<span>\n# H')).toEqual([]);
     expect(extractHeadings('<a href="x" data-y>\n\n# H')).toEqual([{ level: 1, text: 'H', line: 3 }]);
@@ -202,6 +215,14 @@ describe('stripInlineMarkdown', () => {
       'tag ref *literal*',
     );
     expect(stripInlineMarkdown('  spaced   out  ')).toBe('spaced out');
+  });
+
+  it('removes exactly the complete HTML tags, as a Markdown parser reads them', () => {
+    expect(stripInlineMarkdown('<a title="x>y" data-z>link</a>')).toBe('link');
+    expect(stripInlineMarkdown('a < b > c and <3')).toBe('a < b > c and <3');
+    // One pass: the brackets around a tag are literal text that stays visible.
+    expect(stripInlineMarkdown('<<b>b>')).toBe('<b>');
+    expect(stripInlineMarkdown('<span title="open>')).toBe('<span title="open>');
   });
 });
 

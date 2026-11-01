@@ -165,23 +165,49 @@ function listItemStart(line: string): ListItemStart | null {
 
 const HTML_BLOCK_TYPE_6_TAGS =
   'address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul';
-const HTML_BLOCK_STARTS: readonly { readonly start: RegExp; readonly end: RegExp | null }[] = [
-  { start: /^ {0,3}<(?:script|pre|style|textarea)(?:[\s>]|$)/i, end: /<\/(?:script|pre|style|textarea)>/i },
-  { start: /^ {0,3}<!--/, end: /-->/ },
-  { start: /^ {0,3}<\?/, end: /\?>/ },
-  { start: /^ {0,3}<![A-Za-z]/, end: />/ },
-  { start: /^ {0,3}<!\[CDATA\[/, end: /\]\]>/ },
+/**
+ * Start conditions of the HTML block types 1-6 and the strings whose presence
+ * on a line ends the block (compared case-insensitively, lower case here), as
+ * CommonMark defines them: for example a comment block ends at the first line
+ * containing `-->`, also on its first line (`<!-->`, `<!--->`), while
+ * `--!>` does not end it. Type 6 blocks end at a blank line (`end: null`).
+ */
+const HTML_BLOCK_STARTS: readonly { readonly start: RegExp; readonly end: readonly string[] | null }[] = [
+  {
+    start: /^ {0,3}<(?:script|pre|style|textarea)(?:[\s>]|$)/i,
+    end: ['</script>', '</pre>', '</style>', '</textarea>'],
+  },
+  { start: /^ {0,3}<!--/, end: ['-->'] },
+  { start: /^ {0,3}<\?/, end: ['?>'] },
+  { start: /^ {0,3}<![A-Za-z]/, end: ['>'] },
+  { start: /^ {0,3}<!\[CDATA\[/, end: [']]>'] },
   { start: new RegExp(`^ {0,3}</?(?:${HTML_BLOCK_TYPE_6_TAGS})(?:[\\s>]|/>|$)`, 'i'), end: null },
 ];
+
+/** True when `line` contains one of the end strings of an HTML block. */
+function endsHtmlBlock(line: string, end: readonly string[]): boolean {
+  const lower = line.toLowerCase();
+  return end.some((marker) => lower.includes(marker));
+}
+
+/** A complete CommonMark open tag (quoted attribute values may contain `>`) or closing tag. */
+const HTML_TAG =
+  /<[A-Za-z][A-Za-z0-9-]*(?:\s+[A-Za-z_:][\w.:-]*(?:\s*=\s*(?:[^\s"'=<>`]+|'[^']*'|"[^"]*"))?)*\s*\/?>|<\/[A-Za-z][A-Za-z0-9-]*\s*>/;
 /** HTML block type 7: a lone complete open or closing tag. It cannot interrupt a paragraph. */
-const HTML_BLOCK_TYPE_7 =
-  /^ {0,3}(?:<[A-Za-z][A-Za-z0-9-]*(?:\s+[A-Za-z_:][\w.:-]*(?:\s*=\s*(?:[^\s"'=<>`]+|'[^']*'|"[^"]*"))?)*\s*\/?>|<\/[A-Za-z][A-Za-z0-9-]*\s*>)[ \t]*$/;
+const HTML_BLOCK_TYPE_7 = new RegExp(`^ {0,3}(?:${HTML_TAG.source})[ \\t]*$`);
+/**
+ * Inline raw HTML tags, which are not part of the visible text. They are
+ * removed in one pass, as a Markdown parser reads them: in `<<b>b>` only `<b>`
+ * is a tag and the visible text is `<b>`. The result is plain text that is only
+ * ever displayed as text, never parsed as HTML.
+ */
+const INLINE_HTML_TAG = new RegExp(HTML_TAG.source, 'g');
 
 /** An HTML block starting on a line. */
 interface HtmlBlockStart {
-  /** Pattern of the line that closes the block (part of the block), or null when a blank line ends it. */
-  readonly end: RegExp | null;
-  /** True when the closing pattern already occurs on the first line after the opening token. */
+  /** Strings of which one closes the block on the line containing it, or null when a blank line ends it. */
+  readonly end: readonly string[] | null;
+  /** True when the first line already contains a closing string. */
   readonly closed: boolean;
 }
 
@@ -191,10 +217,8 @@ interface HtmlBlockStart {
  */
 function htmlBlockStart(line: string, inParagraph: boolean): HtmlBlockStart | undefined {
   for (const kind of HTML_BLOCK_STARTS) {
-    const match = kind.start.exec(line);
-    if (match === null) continue;
-    const rest = line.slice(match[0].length);
-    return { end: kind.end, closed: kind.end?.test(rest) === true };
+    if (!kind.start.test(line)) continue;
+    return { end: kind.end, closed: kind.end !== null && endsHtmlBlock(line, kind.end) };
   }
   if (!inParagraph && HTML_BLOCK_TYPE_7.test(line)) return { end: null, closed: false };
   return undefined;
@@ -225,7 +249,7 @@ export function stripInlineMarkdown(text: string): string {
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/\[([^\]]*)\]\[[^\]]*\]/g, '$1')
-    .replace(/<\/?[a-zA-Z][^>]*>/g, '')
+    .replace(INLINE_HTML_TAG, '')
     .replace(/(\*{1,3}|_{1,3}|~~|`+)(?=\S)([\s\S]*?\S)\1/g, '$2')
     .replace(/\uE000(\d+)\uE001/g, (_match, code: string) => String.fromCharCode(Number(code)))
     .replace(/\s+/g, ' ')
@@ -264,7 +288,7 @@ export function extractHeadings(markdown: string): MarkdownHeading[] {
     }
 
     if (html !== null) {
-      if (html.end === null ? BLANK.test(line) : html.end.test(line)) html = null;
+      if (html.end === null ? BLANK.test(line) : endsHtmlBlock(line, html.end)) html = null;
       continue;
     }
 
