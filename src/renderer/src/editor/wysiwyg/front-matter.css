@@ -5,7 +5,10 @@
 
 .mpp-document .mpp-front-matter {
   box-sizing: border-box;
-  width: min(var(--mpp-el-content-width), calc(100% - 2 * clamp(48px, 7vw, 96px)));
+  width: min(
+    var(--mpp-editor-column-width, var(--mpp-el-content-width)),
+    calc(100% - 2 * clamp(48px, 7vw, 96px))
+  );
   margin: 40px auto 0;
   border: 1px solid var(--mpp-ui-border);
   border-radius: var(--mpp-radius-md);

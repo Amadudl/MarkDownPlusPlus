@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { EditorWidthMode } from '@shared/settings';
 import type { AppInfo } from '@shared/types';
 import type { CursorInfo } from '@renderer/editor/types';
 import { detectPlatform, type DesktopPlatform } from '@renderer/platform/platform';
@@ -46,6 +47,8 @@ export interface UiData {
   readonly appInfo: AppInfo | null;
   readonly cursors: Readonly<Record<string, CursorInfo>>;
   readonly dropActive: boolean;
+  /** Width mode restored when full width is toggled off ('theme' until full width was entered). */
+  readonly restoreWidthMode: Exclude<EditorWidthMode, 'full'>;
 }
 
 export interface UiState extends UiData {
@@ -65,6 +68,7 @@ export interface UiState extends UiData {
   setAppInfo(info: AppInfo): void;
   setCursor(docId: string, info: CursorInfo): void;
   setDropActive(active: boolean): void;
+  setRestoreWidthMode(mode: Exclude<EditorWidthMode, 'full'>): void;
 }
 
 /** Default auto-dismiss durations per toast kind. */
@@ -99,6 +103,7 @@ export function initialUiState(): UiData {
     appInfo: null,
     cursors: {},
     dropActive: false,
+    restoreWidthMode: 'theme',
   };
 }
 
@@ -160,6 +165,9 @@ export const useUi = create<UiState>()((set, get) => ({
   },
   setDropActive(active) {
     set({ dropActive: active });
+  },
+  setRestoreWidthMode(mode) {
+    set({ restoreWidthMode: mode });
   },
 }));
 

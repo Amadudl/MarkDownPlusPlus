@@ -373,7 +373,7 @@ default `true`) and `boldKeywords` (optional, default `false`) may be omitted.
 | `typography.baseFontSize`                          | `10` – `32` (px)                                  | Body font size.                                                              |
 | `typography.lineHeight`                            | `1` – `2.6`                                       | Body line height.                                                            |
 | `typography.paragraphSpacing`                      | `0` – `3` (em)                                    | Space between blocks.                                                        |
-| `typography.contentWidth`                          | `480` – `2400` (px)                               | Maximum width of the text column.                                            |
+| `typography.contentWidth`                          | `480` – `2400` (px)                               | Text column width in exports, and in the editor with Editor width _Theme_.   |
 | `headings.scale`                                   | six numbers, `0.6` – `4` each                     | Font-size multipliers for `h1` … `h6`.                                       |
 | `headings.weight`                                  | `300` – `900`                                     | Font weight.                                                                 |
 | `headings.letterSpacing`                           | `-0.1` – `0.3` (em)                               | Tracking.                                                                    |

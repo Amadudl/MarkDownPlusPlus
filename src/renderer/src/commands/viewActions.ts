@@ -1,4 +1,6 @@
+import type { EditorWidthMode } from '@shared/settings';
 import type { EditorMode } from '@shared/types';
+import { toggledWidthMode } from '@renderer/editor/columnWidth';
 import type { FormatCommand } from '@renderer/editor/types';
 import { getActiveAdapter } from '@renderer/store/adapters';
 import { selectActiveDocument, useDocuments } from '@renderer/store/documents';
@@ -47,6 +49,23 @@ export async function toggleOutline(): Promise<void> {
   const visible = !useUi.getState().outlineVisible;
   useUi.getState().setOutlineVisible(visible);
   await useSettings.getState().update({ general: { showOutline: visible } });
+}
+
+/**
+ * Sets the editor width mode (persisted). When full width is entered, the mode it
+ * replaces is remembered so {@link toggleFullWidth} can restore it.
+ */
+export async function setWidthMode(mode: EditorWidthMode): Promise<void> {
+  const current = useSettings.getState().settings.editor.widthMode;
+  if (mode === current) return;
+  if (current !== 'full') useUi.getState().setRestoreWidthMode(current);
+  await useSettings.getState().update({ editor: { widthMode: mode } });
+}
+
+/** Switches between full width and the width mode that was active before it. */
+export async function toggleFullWidth(): Promise<void> {
+  const current = useSettings.getState().settings.editor.widthMode;
+  await setWidthMode(toggledWidthMode(current, useUi.getState().restoreWidthMode));
 }
 
 /** Applies a formatting command to the active editor. */

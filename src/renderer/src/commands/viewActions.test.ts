@@ -12,7 +12,9 @@ import {
   runFormat,
   runHistory,
   setActiveMode,
+  setWidthMode,
   toggleActiveMode,
+  toggleFullWidth,
   toggleOutline,
   zoomBy,
 } from './viewActions';
@@ -64,6 +66,32 @@ describe('view actions', () => {
     expect(useSettings.getState().settings.general.showOutline).toBe(true);
     await toggleOutline();
     expect(useUi.getState().outlineVisible).toBe(false);
+  });
+
+  it('toggles full width and restores the previous width mode', async () => {
+    const width = (): string => useSettings.getState().settings.editor.widthMode;
+    await toggleFullWidth();
+    expect(width()).toBe('full');
+    await toggleFullWidth();
+    expect(width()).toBe('theme');
+
+    await setWidthMode('custom');
+    await toggleFullWidth();
+    expect(width()).toBe('full');
+    expect(useUi.getState().restoreWidthMode).toBe('custom');
+    await toggleFullWidth();
+    expect(width()).toBe('custom');
+  });
+
+  it('remembers the mode replaced by full width when it is chosen directly', async () => {
+    setSettings(api, { editor: { widthMode: 'custom' } });
+    await setWidthMode('full');
+    expect(useUi.getState().restoreWidthMode).toBe('custom');
+    await setWidthMode('theme');
+    expect(useUi.getState().restoreWidthMode).toBe('custom');
+    const calls = vi.mocked(api.settings.set).mock.calls.length;
+    await setWidthMode('theme');
+    expect(api.settings.set).toHaveBeenCalledTimes(calls);
   });
 
   it('runs formatting commands on the active editor', () => {

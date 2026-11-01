@@ -1,8 +1,22 @@
 import type { JSX } from 'react';
-import type { EditorSettings, SettingsPatch } from '@shared/settings';
+import {
+  CUSTOM_WIDTH_MAX,
+  CUSTOM_WIDTH_MIN,
+  type EditorSettings,
+  type EditorWidthMode,
+  type SettingsPatch,
+} from '@shared/settings';
+import { setWidthMode } from '@renderer/commands/viewActions';
 import { useSettings } from '@renderer/store/settings';
 import { NumberField, Segmented, SelectField, SettingRow, Toggle } from './controls';
 import { SourceFontField } from './SourceFontField';
+
+/** Help text of the editor width setting for each mode. */
+export const WIDTH_MODE_DESCRIPTIONS: Readonly<Record<EditorWidthMode, string>> = {
+  theme: 'Text column width of Visual and Markdown mode. Theme uses the content width of the element style.',
+  full: 'The text uses the whole width of the window. Toggle it any time with View → Full Width.',
+  custom: 'The text column is as wide as you set below. Exports always use the element style width.',
+};
 
 /** Settings → Editor. */
 export function EditorSection(): JSX.Element {
@@ -23,6 +37,37 @@ export function EditorSection(): JSX.Element {
           onChange={(defaultMode) => set({ defaultMode })}
         />
       </SettingRow>
+      <SettingRow label="Editor width" description={WIDTH_MODE_DESCRIPTIONS[editor.widthMode]}>
+        <Segmented<EditorWidthMode>
+          label="Editor width"
+          value={editor.widthMode}
+          choices={[
+            { value: 'theme', label: 'Theme' },
+            { value: 'full', label: 'Full' },
+            { value: 'custom', label: 'Custom' },
+          ]}
+          onChange={(widthMode) => void setWidthMode(widthMode)}
+        />
+      </SettingRow>
+      {editor.widthMode === 'custom' && (
+        <SettingRow
+          label="Custom width"
+          description="Maximum width of the text column; it never gets wider than the window."
+          htmlFor="editor-custom-width"
+        >
+          <NumberField
+            id="editor-custom-width"
+            label="Custom width"
+            value={editor.customWidth}
+            min={CUSTOM_WIDTH_MIN}
+            max={CUSTOM_WIDTH_MAX}
+            step={20}
+            unit="px"
+            slider
+            onChange={(customWidth) => set({ customWidth })}
+          />
+        </SettingRow>
+      )}
       <SettingRow label="Source font" description="Font of the Markdown source editor." htmlFor="editor-font">
         <SourceFontField
           id="editor-font"

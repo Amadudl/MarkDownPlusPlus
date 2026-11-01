@@ -38,6 +38,8 @@ describe('theme stylesheets', () => {
       // Set by the source editor host (EditorArea) for the CodeMirror source view.
       '--mpp-source-font-family',
       '--mpp-source-font-size',
+      // Set by EditorArea from the editor width setting (always read with a theme fallback).
+      '--mpp-editor-column-width',
     ]);
     const codemirror = readRepoFile('src/renderer/src/themes/codemirror.ts');
     const fromHelper = [...codemirror.matchAll(/code\('([a-z-]+)'\)/g)].map(
@@ -48,6 +50,22 @@ describe('theme stylesheets', () => {
     // `var(--mpp-code-${name})` inside the helper itself is a template, not a reference.
     const names = [...direct.filter((name) => !name.endsWith('-')), ...fromHelper];
     expect(names.filter((name) => !known.has(name))).toEqual([]);
+  });
+
+  it('size the editor column by the editor width setting with the theme width as fallback', () => {
+    const column = 'var(--mpp-editor-column-width, var(--mpp-el-content-width))';
+    const sheets = [
+      css['crepe-bridge.css']!,
+      readRepoFile('src/renderer/src/styles/editor.css'),
+      readRepoFile('src/renderer/src/editor/wysiwyg/front-matter.css'),
+    ];
+    for (const text of sheets) {
+      const flat = text.replace(/\s+/g, ' ');
+      expect(flat).toContain(column);
+      expect(flat.replaceAll(column, '')).not.toContain('var(--mpp-el-content-width)');
+    }
+    // Exports never see the editor area, so they keep the theme width.
+    expect(css['export.css']).not.toContain('--mpp-editor-column-width');
   });
 
   it('never contain "<", so they are safe inside a <style> element', () => {

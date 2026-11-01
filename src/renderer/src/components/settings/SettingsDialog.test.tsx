@@ -11,6 +11,7 @@ import { FAKE_APP_INFO, type FakeApi } from '@renderer/test/fakeApi';
 import { resetApp, setSettings } from '@renderer/test/utils';
 import { useSettings } from '@renderer/store/settings';
 import { useUi } from '@renderer/store/ui';
+import { WIDTH_MODE_DESCRIPTIONS } from './EditorSection';
 import { importThemeFile, MAX_THEME_FILE_BYTES } from './ImportThemeButton';
 import { SETTINGS_SECTIONS, SettingsDialog } from './SettingsDialog';
 
@@ -117,6 +118,38 @@ describe('SettingsDialog', () => {
         autoSaveDelayMs: 2000,
       }),
     );
+  });
+
+  it('edits the editor width with help text per mode', async () => {
+    const user = userEvent.setup();
+    openSection('editor');
+    render(<SettingsDialog />);
+    const group = screen.getByRole('radiogroup', { name: 'Editor width' });
+    expect(within(group).getByRole('radio', { name: 'Theme' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByText(WIDTH_MODE_DESCRIPTIONS.theme)).toBeInTheDocument();
+    expect(screen.queryByRole('spinbutton', { name: 'Custom width' })).not.toBeInTheDocument();
+
+    await user.click(within(group).getByRole('radio', { name: 'Full' }));
+    expect(settings().editor.widthMode).toBe('full');
+    expect(screen.getByText(WIDTH_MODE_DESCRIPTIONS.full)).toBeInTheDocument();
+    expect(screen.queryByRole('spinbutton', { name: 'Custom width' })).not.toBeInTheDocument();
+
+    await user.click(within(group).getByRole('radio', { name: 'Custom' }));
+    expect(screen.getByText(WIDTH_MODE_DESCRIPTIONS.custom)).toBeInTheDocument();
+    const width = screen.getByRole('spinbutton', { name: 'Custom width' });
+    expect(width).toHaveValue(1200);
+    fireEvent.change(screen.getByRole('slider', { name: 'Custom width slider' }), {
+      target: { value: '1600' },
+    });
+    await vi.waitFor(() =>
+      expect(settings().editor).toMatchObject({ widthMode: 'custom', customWidth: 1600 }),
+    );
+    expect(api.state.settings.editor).toMatchObject({ widthMode: 'custom', customWidth: 1600 });
+    await user.clear(width);
+    await user.type(width, '9000{Enter}');
+    expect(settings().editor.customWidth).toBe(4000);
+    // Full width was entered from the theme mode, so toggling it off later restores the theme mode.
+    expect(useUi.getState().restoreWidthMode).toBe('theme');
   });
 
   it('edits general settings', async () => {

@@ -119,6 +119,10 @@ describe('command definitions', () => {
     expect(useUi.getState().focusMode).toBe(true);
     await executeCommand(CommandId.ViewToggleOutline);
     expect(useUi.getState().outlineVisible).toBe(true);
+    await executeCommand(CommandId.ViewToggleFullWidth);
+    expect(useSettings.getState().settings.editor.widthMode).toBe('full');
+    await executeCommand(CommandId.ViewToggleFullWidth);
+    expect(useSettings.getState().settings.editor.widthMode).toBe('theme');
     await executeCommand(CommandId.FileNew);
     const second = docs().activeId;
     await executeCommand(CommandId.ViewNextTab);
