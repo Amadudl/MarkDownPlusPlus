@@ -4,25 +4,15 @@ Dauerhafte Aufgabenliste aller Verstöße gegen das Gesetz Unabhängigkeit (Stic
 
 ## Offen
 
+### Wiedervorlage
+
+- [ ] opensource.md: Ausnahme Vorgabe für React, Milkdown und CodeMirror am 2027-01-01 mit Amadeus neu entscheiden (Punkt 4 und 5) → Ziel: Ausnahme verlängern oder nachbauen
+
 ### Abhängigkeiten der Kategorie Sonstige (package.json)
 
-- [ ] package.json: @codemirror/autocomplete ist fremder Code (Punkt 4) → Ziel: lib-editor
-- [ ] package.json: @codemirror/commands ist fremder Code (Punkt 4) → Ziel: lib-editor
-- [ ] package.json: @codemirror/lang-markdown ist fremder Code (Punkt 4) → Ziel: lib-editor
-- [ ] package.json: @codemirror/language ist fremder Code (Punkt 4) → Ziel: lib-editor
-- [ ] package.json: @codemirror/language-data ist fremder Code (Punkt 4) → Ziel: lib-editor
-- [ ] package.json: @codemirror/lint ist fremder Code (Punkt 4) → Ziel: lib-editor
-- [ ] package.json: @codemirror/search ist fremder Code (Punkt 4) → Ziel: lib-editor
-- [ ] package.json: @codemirror/state ist fremder Code (Punkt 4) → Ziel: lib-editor
-- [ ] package.json: @codemirror/view ist fremder Code (Punkt 4) → Ziel: lib-editor
-- [ ] package.json: codemirror ist fremder Code (Punkt 4) → Ziel: lib-editor
-- [ ] package.json: @lezer/highlight ist fremder Code (Punkt 4) → Ziel: lib-editor
-- [ ] package.json: @milkdown/crepe ist fremder Code (Punkt 4) → Ziel: nachbauen
-- [ ] package.json: @milkdown/kit ist fremder Code (Punkt 4) → Ziel: nachbauen
 - [ ] package.json: @fontsource-variable/inter liefert eine Schrift als npm Paket (Punkt 4 und 7) → Ziel: assets
 - [ ] package.json: @fontsource-variable/jetbrains-mono liefert eine Schrift als npm Paket (Punkt 4 und 7) → Ziel: assets
 - [ ] package.json: lucide-react liefert fremde Icons (Punkt 4 und 7) → Ziel: assets
-- [ ] package.json: dompurify ist fremder Code, sicherheitskritisch; Nachbau nur mit adversarischen Tests (Punkt 4) → Ziel: lib-sanitize
 - [ ] package.json: katex ist fremder Code samt CSS und Schriften (Punkt 4) → Ziel: lib-markdown
 - [ ] package.json: rehype-katex ist fremder Code (Punkt 4) → Ziel: lib-markdown
 - [ ] package.json: rehype-stringify ist fremder Code (Punkt 4) → Ziel: lib-markdown
@@ -31,8 +21,6 @@ Dauerhafte Aufgabenliste aller Verstöße gegen das Gesetz Unabhängigkeit (Stic
 - [ ] package.json: remark-parse ist fremder Code (Punkt 4) → Ziel: lib-markdown
 - [ ] package.json: remark-rehype ist fremder Code (Punkt 4) → Ziel: lib-markdown
 - [ ] package.json: unified ist fremder Code (Punkt 4) → Ziel: lib-markdown
-- [ ] package.json: react ist fremder Code; Ablösung des UI Frameworks berührt den Stack und ist eine Frage nach R7 (Punkt 4) → Ziel: nachbauen
-- [ ] package.json: react-dom ist fremder Code; Ablösung zusammen mit react (Punkt 4) → Ziel: nachbauen
 - [ ] package.json: zod ist fremder Code (Punkt 4) → Ziel: lib-validation
 - [ ] package.json: zustand ist fremder Code (Punkt 4) → Ziel: lib-state
 - [ ] package.json: @testing-library/jest-dom ist fremder Code (Punkt 4) → Ziel: lib-testing
@@ -80,3 +68,20 @@ Dauerhafte Aufgabenliste aller Verstöße gegen das Gesetz Unabhängigkeit (Stic
 - [ ] CODE_OF_CONDUCT.md:1-135: gesamter Text ist laut Hinweis ab Zeile 118 der Contributor Covenant 2.1 (CC BY 4.0) mit Teilen aus Mozillas Durchsetzungsstufen, fremder Text und fremde Vorlage im Repo (Punkt 2 und 7) → Ziel: nachbauen
 
 ## Erledigt
+
+- [x] package.json: @codemirror/autocomplete ist fremder Code (Punkt 4) → Ziel: lib-editor (erledigt 2026-11-01: als Ausnahme Vorgabe in opensource.md eingetragen (Freigabe Amadeus), Wiedervorlage 2027-01-01)
+- [x] package.json: @codemirror/commands ist fremder Code (Punkt 4) → Ziel: lib-editor (erledigt 2026-11-01: als Ausnahme Vorgabe in opensource.md eingetragen (Freigabe Amadeus), Wiedervorlage 2027-01-01)
+- [x] package.json: @codemirror/lang-markdown ist fremder Code (Punkt 4) → Ziel: lib-editor (erledigt 2026-11-01: als Ausnahme Vorgabe in opensource.md eingetragen (Freigabe Amadeus), Wiedervorlage 2027-01-01)
+- [x] package.json: @codemirror/language ist fremder Code (Punkt 4) → Ziel: lib-editor (erledigt 2026-11-01: als Ausnahme Vorgabe in opensource.md eingetragen (Freigabe Amadeus), Wiedervorlage 2027-01-01)
+- [x] package.json: @codemirror/language-data ist fremder Code (Punkt 4) → Ziel: lib-editor (erledigt 2026-11-01: als Ausnahme Vorgabe in opensource.md eingetragen (Freigabe Amadeus), Wiedervorlage 2027-01-01)
+- [x] package.json: @codemirror/lint ist fremder Code (Punkt 4) → Ziel: lib-editor (erledigt 2026-11-01: als Ausnahme Vorgabe in opensource.md eingetragen (Freigabe Amadeus), Wiedervorlage 2027-01-01)
+- [x] package.json: @codemirror/search ist fremder Code (Punkt 4) → Ziel: lib-editor (erledigt 2026-11-01: als Ausnahme Vorgabe in opensource.md eingetragen (Freigabe Amadeus), Wiedervorlage 2027-01-01)
+- [x] package.json: @codemirror/state ist fremder Code (Punkt 4) → Ziel: lib-editor (erledigt 2026-11-01: als Ausnahme Vorgabe in opensource.md eingetragen (Freigabe Amadeus), Wiedervorlage 2027-01-01)
+- [x] package.json: @codemirror/view ist fremder Code (Punkt 4) → Ziel: lib-editor (erledigt 2026-11-01: als Ausnahme Vorgabe in opensource.md eingetragen (Freigabe Amadeus), Wiedervorlage 2027-01-01)
+- [x] package.json: codemirror ist fremder Code (Punkt 4) → Ziel: lib-editor (erledigt 2026-11-01: als Ausnahme Vorgabe in opensource.md eingetragen (Freigabe Amadeus), Wiedervorlage 2027-01-01)
+- [x] package.json: @lezer/highlight ist fremder Code (Punkt 4) → Ziel: lib-editor (erledigt 2026-11-01: als Ausnahme Vorgabe in opensource.md eingetragen (Freigabe Amadeus), Wiedervorlage 2027-01-01)
+- [x] package.json: @milkdown/crepe ist fremder Code (Punkt 4) → Ziel: nachbauen (erledigt 2026-11-01: als Ausnahme Vorgabe in opensource.md eingetragen (Freigabe Amadeus), Wiedervorlage 2027-01-01)
+- [x] package.json: @milkdown/kit ist fremder Code (Punkt 4) → Ziel: nachbauen (erledigt 2026-11-01: als Ausnahme Vorgabe in opensource.md eingetragen (Freigabe Amadeus), Wiedervorlage 2027-01-01)
+- [x] package.json: dompurify ist fremder Code, sicherheitskritisch; Nachbau nur mit adversarischen Tests (Punkt 4) → Ziel: lib-sanitize (erledigt 2026-11-01: als dauerhafte Ausnahme in opensource.md eingetragen (Freigabe Amadeus))
+- [x] package.json: react ist fremder Code; Ablösung des UI Frameworks berührt den Stack und ist eine Frage nach R7 (Punkt 4) → Ziel: nachbauen (erledigt 2026-11-01: als Ausnahme Vorgabe in opensource.md eingetragen (Freigabe Amadeus), Wiedervorlage 2027-01-01)
+- [x] package.json: react-dom ist fremder Code; Ablösung zusammen mit react (Punkt 4) → Ziel: nachbauen (erledigt 2026-11-01: als Ausnahme Vorgabe in opensource.md eingetragen (Freigabe Amadeus), Wiedervorlage 2027-01-01)
