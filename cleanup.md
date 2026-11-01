@@ -66,6 +66,7 @@ Dauerhafte Aufgabenliste aller Verstöße gegen das Gesetz Unabhängigkeit (Stic
 - [ ] .github/workflows/ci.yml, codeql.yml, release.yml: fremde GitHub Actions (actions/checkout, actions/setup-node, actions/upload-artifact, actions/attest-build-provenance, github/codeql-action) sind in opensource.md nicht erfasst (Punkt 5) → Ziel: opensource.md
 - [ ] .github/workflows/unabhaengigkeit.yml: fremde GitHub Action actions/checkout ist in opensource.md nicht erfasst (Punkt 5) → Ziel: opensource.md
 - [ ] CODE_OF_CONDUCT.md:1-135: gesamter Text ist laut Hinweis ab Zeile 118 der Contributor Covenant 2.1 (CC BY 4.0) mit Teilen aus Mozillas Durchsetzungsstufen, fremder Text und fremde Vorlage im Repo (Punkt 2 und 7) → Ziel: nachbauen
+- [ ] .githooks/lib/secret-scan.sh, .githooks/fix-findings.sh, .githooks/unabhaengigkeit.sh, .githooks/assets-fetch.sh: gleicher Code wie in nav4x:.githooks/ (Hook Kit, identisch in 15 eigenen Repos) (Punkt 6) → Ziel: lib-hookkit
 
 ## Erledigt
 
