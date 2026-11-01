@@ -127,6 +127,8 @@ describe('SettingsDialog', () => {
     const group = screen.getByRole('radiogroup', { name: 'Editor width' });
     expect(within(group).getByRole('radio', { name: 'Theme' })).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByText(WIDTH_MODE_DESCRIPTIONS.theme)).toBeInTheDocument();
+    // In Markdown mode the width only applies with word wrap (otherwise lines scroll sideways).
+    expect(screen.getByText(/Visual mode and of Markdown mode with word wrap on\./)).toBeInTheDocument();
     expect(screen.queryByRole('spinbutton', { name: 'Custom width' })).not.toBeInTheDocument();
 
     await user.click(within(group).getByRole('radio', { name: 'Full' }));

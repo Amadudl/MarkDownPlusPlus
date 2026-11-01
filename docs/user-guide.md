@@ -325,7 +325,9 @@ Whether the outline is shown is remembered across restarts (`general.showOutline
 - **Editor width**: by default the text column is as wide as the element style's
   _Content width_. On a wide screen, **View → Full Width** (or _Toggle Full Width_ in the
   command palette) lets the text use the whole window, minus the normal margin; running
-  it again returns to the width you had before. **Settings → Editor → Editor width**
+  it again returns to the width you had before, as long as you switched to full width in
+  the current session. After a restart it returns to _Theme_ instead (full width itself is
+  remembered). **Settings → Editor → Editor width**
   offers _Theme_, _Full_ and _Custom_; with _Custom_ you set the maximum width in pixels
   (480 – 4000), and the column still never gets wider than the window. The setting
   applies to Visual mode and Markdown mode (with word wrap) and is remembered. Exports
@@ -431,7 +433,7 @@ right away.
 | Label                     | Key                        | Values / default                                                             | Description                                                                                                |
 | ------------------------- | -------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | Default mode              | `editor.defaultMode`       | `wysiwyg` (Visual) / `source` (Markdown), default `wysiwyg`                  | The mode new and opened documents start in.                                                                |
-| Editor width              | `editor.widthMode`         | `theme` / `full` / `custom`, default `theme`                                 | Text column of both modes: element style width, whole window or _Custom width_.                            |
+| Editor width              | `editor.widthMode`         | `theme` / `full` / `custom`, default `theme`                                 | Text column of Visual mode and wrapped Markdown mode: element style width, whole window or _Custom width_. |
 | Custom width              | `editor.customWidth`       | `480` – `4000` px, default `1200`                                            | Maximum text column width with _Custom_; never wider than the window.                                      |
 | Source font               | `editor.sourceFontFamily`  | Curated list (default _JetBrains Mono (bundled)_) or _Custom…_ CSS font list | Font of Markdown mode, previewed by a sample line.                                                         |
 | Source font size          | `editor.sourceFontSize`    | `8` – `40` px, default `14`                                                  | Font size of Markdown mode.                                                                                |

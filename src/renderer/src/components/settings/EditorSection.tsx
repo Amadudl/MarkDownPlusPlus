@@ -13,7 +13,8 @@ import { SourceFontField } from './SourceFontField';
 
 /** Help text of the editor width setting for each mode. */
 export const WIDTH_MODE_DESCRIPTIONS: Readonly<Record<EditorWidthMode, string>> = {
-  theme: 'Text column width of Visual and Markdown mode. Theme uses the content width of the element style.',
+  theme:
+    'Text column width of Visual mode and of Markdown mode with word wrap on. Theme uses the content width of the element style.',
   full: 'The text uses the whole width of the window. Toggle it any time with View → Full Width.',
   custom: 'The text column is as wide as you set below. Exports always use the element style width.',
 };

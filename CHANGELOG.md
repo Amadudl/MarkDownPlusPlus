@@ -11,9 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Editor width** setting (Settings → Editor): keep the element style's width (_Theme_),
   use the whole window width (_Full_) or set your own maximum width (_Custom_, 480 –
-  4000 px). It applies to Visual mode and Markdown mode; exports keep the element style
-  width. **View → Full Width** (also _Toggle Full Width_ in the command palette) switches
-  full width on and back to the previous width.
+  4000 px). It applies to Visual mode and Markdown mode with word wrap; exports keep the
+  element style width. **View → Full Width** (also _Toggle Full Width_ in the command
+  palette) switches full width on and back to the previous width of the current session
+  (to _Theme_ after a restart).
 
 ### Changed
 
