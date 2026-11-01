@@ -133,6 +133,18 @@ function nonEmpty(value: string | undefined): string | null {
 }
 
 /**
+ * True when the running executable lies inside the AppImage mount `APPDIR`.
+ * `APPIMAGE` and `APPDIR` are inherited by child processes: a `.deb` or `.tar.gz`
+ * copy started from a terminal of another AppImage app sees that app's values,
+ * but its own executable is outside that mount, so the foreign AppImage is never
+ * replaced.
+ */
+function runsFromOwnAppImageMount(environment: InstallEnvironment): boolean {
+  const appDir = nonEmpty(environment.env.APPDIR)?.replace(/\/+$/, '') ?? '';
+  return appDir !== '' && posix.isAbsolute(appDir) && environment.execPath.startsWith(`${appDir}/`);
+}
+
+/**
  * Decides how the running copy can be updated:
  * - development builds, unknown architectures, the Windows portable build
  *   (`PORTABLE_EXECUTABLE_DIR`), Linux packages other than the AppImage and every
@@ -140,7 +152,8 @@ function nonEmpty(value: string | undefined): string | null {
  * - a Windows NSIS installation (its uninstaller lies next to the executable) →
  *   `win-<arch>-setup.exe`;
  * - macOS → `mac-<arch>.dmg`;
- * - a Linux AppImage (`APPIMAGE`) → `linux-<x86_64|arm64>.AppImage`.
+ * - a Linux AppImage (`APPIMAGE`, with the executable inside the mount `APPDIR`) →
+ *   `linux-<x86_64|arm64>.AppImage`.
  * An x64 build running under Arm64 emulation switches to the native Arm64 build.
  */
 export function detectInstallTarget(environment: InstallEnvironment): InstallTarget {
@@ -165,6 +178,7 @@ export function detectInstallTarget(environment: InstallEnvironment): InstallTar
     case 'linux': {
       const appImagePath = nonEmpty(environment.env.APPIMAGE);
       if (appImagePath === null || !posix.isAbsolute(appImagePath)) return { mode: 'manual' };
+      if (!runsFromOwnAppImageMount(environment)) return { mode: 'manual' };
       return {
         mode: 'appimage',
         assetSuffix: `linux-${arch === 'x64' ? 'x86_64' : 'arm64'}.AppImage`,

@@ -169,7 +169,10 @@ Node's `crypto`.
   (unsaved changes are asked about; keeping a document open cancels the install). macOS
   opens the verified disk image; you replace the app yourself. A Linux AppImage is
   replaced atomically (written next to it, made executable, renamed over it) and
-  relaunched. Portable builds and `.deb`/`.rpm`/`.tar.gz` installations only open the
+  relaunched. It counts as an AppImage only when `APPIMAGE` is set **and** the running
+  executable lies inside the AppImage mount `APPDIR`; both variables are inherited by
+  child processes, so a `.deb`/`.tar.gz` copy started from a terminal of another
+  AppImage app never touches that app's file. Portable builds and `.deb`/`.rpm`/`.tar.gz` installations only open the
   release page through the external URL allowlist.
 - **Test hook:** `MPP_UPDATE_API_URL` replaces the API URL only in unpackaged builds and
   only with a loopback address (E2E tests); packaged builds ignore it.

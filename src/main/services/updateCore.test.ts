@@ -155,8 +155,11 @@ describe('detectInstallTarget', () => {
 
   it('replaces the AppImage on Linux and leaves packages to the package manager', () => {
     const linux = { platform: 'linux', execPath: '/tmp/.mount_abc/markdownplusplus' } as const;
+    const mount = { APPDIR: '/tmp/.mount_abc' };
     expect(
-      detectInstallTarget(environment({ ...linux, env: { APPIMAGE: '/home/me/Apps/MarkDown.AppImage' } })),
+      detectInstallTarget(
+        environment({ ...linux, env: { ...mount, APPIMAGE: '/home/me/Apps/MarkDown.AppImage' } }),
+      ),
     ).toEqual({
       mode: 'appimage',
       assetSuffix: 'linux-x86_64.AppImage',
@@ -164,18 +167,59 @@ describe('detectInstallTarget', () => {
     });
     expect(
       detectInstallTarget(
-        environment({ ...linux, arch: 'arm64', env: { APPIMAGE: '/opt/MarkDown.AppImage' } }),
+        environment({
+          ...linux,
+          arch: 'arm64',
+          env: { APPDIR: '/tmp/.mount_abc/', APPIMAGE: '/opt/MarkDown.AppImage' },
+        }),
       ),
     ).toEqual({
       mode: 'appimage',
       assetSuffix: 'linux-arm64.AppImage',
       appImagePath: '/opt/MarkDown.AppImage',
     });
-    expect(detectInstallTarget(environment({ ...linux, env: { APPIMAGE: 'relative.AppImage' } }))).toEqual({
+    expect(
+      detectInstallTarget(environment({ ...linux, env: { ...mount, APPIMAGE: 'relative.AppImage' } })),
+    ).toEqual({
       mode: 'manual',
     });
     expect(
       detectInstallTarget(environment({ ...linux, execPath: '/usr/lib/markdownplusplus/markdownplusplus' })),
+    ).toEqual({ mode: 'manual' });
+  });
+
+  it('never replaces a foreign AppImage whose APPIMAGE/APPDIR a deb or tar.gz copy inherited', () => {
+    // A deb/tar.gz MarkDown++ started from a terminal inside another AppImage app (e.g.
+    // Cursor) inherits that app's APPIMAGE and APPDIR; its own executable lies elsewhere.
+    const inherited = { APPIMAGE: '/home/me/Apps/Cursor.AppImage', APPDIR: '/tmp/.mount_Cursor1' };
+    const linux = { platform: 'linux', env: inherited } as const;
+    for (const execPath of [
+      '/usr/lib/markdownplusplus/markdownplusplus',
+      '/home/me/markdownplusplus-1.1.0/markdownplusplus',
+      // A sibling mount whose name merely starts with APPDIR.
+      '/tmp/.mount_Cursor1x/markdownplusplus',
+      '/tmp/.mount_Cursor1',
+    ]) {
+      expect(detectInstallTarget(environment({ ...linux, execPath }))).toEqual({ mode: 'manual' });
+    }
+    // APPIMAGE alone (without the mount of our own executable) is not trusted either.
+    expect(
+      detectInstallTarget(
+        environment({
+          platform: 'linux',
+          execPath: '/tmp/.mount_abc/markdownplusplus',
+          env: { APPIMAGE: '/home/me/Apps/MarkDown.AppImage' },
+        }),
+      ),
+    ).toEqual({ mode: 'manual' });
+    expect(
+      detectInstallTarget(
+        environment({
+          platform: 'linux',
+          execPath: '/tmp/.mount_abc/markdownplusplus',
+          env: { APPIMAGE: '/home/me/Apps/MarkDown.AppImage', APPDIR: 'relative/.mount_abc' },
+        }),
+      ),
     ).toEqual({ mode: 'manual' });
   });
 
