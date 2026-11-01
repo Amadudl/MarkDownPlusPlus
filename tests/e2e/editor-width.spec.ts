@@ -1,7 +1,10 @@
 import type { Locator, Page } from '@playwright/test';
 import type { DomElement, RendererGlobals } from './dom';
 import {
+  activePanel,
   expect,
+  openViaDialog,
+  pressShortcut,
   runCommand,
   sourceEditor,
   switchMode,
@@ -41,6 +44,46 @@ function editorAreaWidth(window: Page): Promise<number> {
       ),
     );
 }
+
+/** Rendered width of an element (its border box). */
+function boxWidth(element: Locator): Promise<number> {
+  return element.evaluate((node: DomElement) =>
+    Math.round(
+      (node as unknown as { getBoundingClientRect(): { width: number } }).getBoundingClientRect().width,
+    ),
+  );
+}
+
+/**
+ * Largest allowed difference in px between a block and the text column it should span
+ * (Crepe's table block insets the table by a few px for its handles).
+ */
+const SPAN_TOLERANCE = 8;
+
+/** A local SVG far wider than any window, so it is scaled down to the text column. */
+const WIDE_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="4000" height="40" viewBox="0 0 4000 40"><rect width="4000" height="40" fill="#c33"/></svg>';
+
+/** A document with every block type that has to follow the editor width. */
+const BLOCKS_MARKDOWN = [
+  '---',
+  'title: Blocks',
+  'tags: [width]',
+  '---',
+  '',
+  '# Blocks',
+  '',
+  '| Name | Value |',
+  '| ---- | ----- |',
+  '| a    | 1     |',
+  '',
+  '```js',
+  'const answer = 42;',
+  '```',
+  '',
+  '![Wide picture](images/wide.svg)',
+  '',
+].join('\n');
 
 async function openEditorSettings(window: Page): Promise<Locator> {
   await window.getByRole('button', { name: 'Settings' }).click();
@@ -132,5 +175,81 @@ test.describe('Editor width', () => {
     const area = await editorAreaWidth(window);
     await expect.poll(() => textColumnWidth(visualEditor(window))).toBeLessThanOrEqual(area - 2 * 96);
     await expect.poll(() => textColumnWidth(visualEditor(window))).toBeGreaterThan(area - 2 * 96 - 24);
+  });
+
+  test('the custom width never makes the Markdown column wider than the window with word wrap', async ({
+    launch,
+    workspace,
+  }) => {
+    const path = await workspace.write('wide.md', `# Wide\n\n${'word '.repeat(400)}\n`);
+    const app = await launch({
+      files: [path],
+      settings: { editor: { wordWrap: true, widthMode: 'custom', customWidth: 4000 } },
+    });
+    const { window } = app;
+    await window.setViewportSize(VIEWPORT);
+    await expect(visualEditor(window)).toBeVisible();
+    // Switch to Markdown mode with the keyboard shortcut, the way a user does.
+    await pressShortcut(app, 'CmdOrCtrl+E');
+    const editor = sourceEditor(window);
+    await expect(editor).toBeVisible();
+    await expect(editor).toHaveClass(/cm-lineWrapping/);
+    const area = await editorAreaWidth(window);
+    // The wrapped lines stay inside the window: no horizontal scrolling of the source editor.
+    await expect.poll(() => boxWidth(editor)).toBeLessThanOrEqual(area);
+    await expect.poll(() => textColumnWidth(editor)).toBeGreaterThan(area - 120);
+    const scroller = activePanel(window).locator('.cm-scroller');
+    const overflow = await scroller.evaluate((node: DomElement) => {
+      const element = node as unknown as { scrollWidth: number; clientWidth: number };
+      return element.scrollWidth - element.clientWidth;
+    });
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
+
+  test('front matter, tables, code blocks and images span the full width column', async ({
+    launch,
+    workspace,
+  }) => {
+    await workspace.write('images/wide.svg', WIDE_SVG);
+    const path = await workspace.write('blocks.md', BLOCKS_MARKDOWN);
+    const app = await launch({ settings: { editor: { widthMode: 'full' } } });
+    const { window } = app;
+    await window.setViewportSize(VIEWPORT);
+    // Opened after the resize: Crepe fixes an image block's height (and so its width) from
+    // the column width at the moment the image loads.
+    await openViaDialog(app, [path]);
+    await expect(tab(window, 'blocks.md').first()).toBeVisible();
+    const editor = visualEditor(window);
+    await expect(editor).toBeVisible();
+
+    const area = await editorAreaWidth(window);
+    await expect.poll(() => textColumnWidth(editor)).toBeGreaterThan(area - 2 * 96 - 24);
+    const column = await textColumnWidth(editor);
+    expect(column).toBeGreaterThan(THEME_WIDTH + 200);
+
+    const image = editor.locator('img').first();
+    await expect
+      .poll(() =>
+        image.evaluate((node: DomElement) => {
+          const element = node as unknown as { complete: boolean; naturalWidth: number };
+          return element.complete && element.naturalWidth > 0;
+        }),
+      )
+      .toBe(true);
+
+    const blocks: Readonly<Record<string, Locator>> = {
+      'front matter': activePanel(window).locator('.mpp-front-matter'),
+      // Crepe keeps a hidden drag preview table next to the real one.
+      table: editor.locator('.milkdown-table-block table:not(.drag-preview table)').first(),
+      'code block': editor.locator('.milkdown-code-block').first(),
+      image,
+    };
+    for (const [name, block] of Object.entries(blocks)) {
+      await expect(block, name).toBeVisible();
+      const width = await boxWidth(block);
+      expect(Math.abs(width - column), `${name} width ${width} vs column ${column}`).toBeLessThanOrEqual(
+        SPAN_TOLERANCE,
+      );
+    }
   });
 });
