@@ -15,10 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- Opening documents, serving local images and serving the app bundle now check the file
-  type and size and read the file through one open file handle, so the checks always apply
-  to the file that is read, and a file that grows past the size limit after the check is
-  refused. FIFOs are refused without waiting for a writer.
+- Opening documents and serving local images now check the file type and size and read
+  the file through one open file handle, so the checks always apply to the file that is
+  read, and a file that grows past the size limit after the check is refused. FIFOs are
+  refused without waiting for a writer. The app bundle is read without a separate check.
 - The regular expression probe worker validates every message against a schema and
   drops malformed requests without running them.
 

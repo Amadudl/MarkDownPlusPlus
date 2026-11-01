@@ -134,8 +134,10 @@ describe('mpp-app handler', () => {
       'mpp-app://bundle/assets',
       'mpp-app://bundle/missing.js',
     ]) {
-      const response = await handler()(new Request(url));
-      expect(response.status, url).toBe(404);
+      for (const method of ['GET', 'HEAD']) {
+        const response = await handler()(new Request(url, { method }));
+        expect(response.status, ` `).toBe(404);
+      }
     }
   });
 

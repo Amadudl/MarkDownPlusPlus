@@ -1,9 +1,8 @@
-import { realpath } from 'node:fs/promises';
+import { readFile, realpath, stat } from 'node:fs/promises';
 import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { protocol } from 'electron';
 import { fromMppFileUrl, MPP_FILE_SCHEME } from '../shared/file-url';
 import { readLocalImage, type LocalImagePolicy } from './services/localImages';
-import { readRegularFile } from './services/regularFile';
 
 /** Scheme serving the bundled renderer. */
 export const APP_SCHEME = 'mpp-app';
@@ -110,10 +109,11 @@ export function createAppProtocolHandler(
       // Resolve symlinks and check containment again so links cannot leave the bundle.
       const [realRoot, realFile] = await Promise.all([realpath(rootDir), realpath(candidate)]);
       if (!isInside(realRoot, realFile)) return textResponse(404, 'Not Found');
-      // Type check and read share one handle (see readRegularFile); bundle files have no size limit.
-      const file = await readRegularFile(realFile, Number.POSITIVE_INFINITY);
-      if (file.kind !== 'ok') return textResponse(404, 'Not Found');
-      const body = request.method === 'HEAD' ? null : file.data;
+      // The bundle lives in the app's ASAR archive, where Electron supports `stat` and `readFile`
+      // but not file handles. GET reads without a separate check (`readFile` fails for folders);
+      // HEAD only checks and never reads, so no file is read after it was checked.
+      const body = request.method === 'HEAD' ? null : await readFile(realFile);
+      if (body === null && !(await stat(realFile)).isFile()) return textResponse(404, 'Not Found');
       const headers: Record<string, string> = {
         'Content-Type': bundleMimeType(realFile),
         'X-Content-Type-Options': 'nosniff',

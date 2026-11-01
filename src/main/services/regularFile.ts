@@ -7,10 +7,13 @@ const READ_CHUNK_BYTES = 64 * 1024;
 /**
  * Read-only, and non-blocking where the flag exists: opening a FIFO for
  * reading would otherwise wait for a writer before the type check can refuse
- * it. `O_NONBLOCK` does not change reads of regular files. It is undefined on
- * Windows (which has no FIFOs), where `| undefined` adds nothing.
+ * it. `O_NONBLOCK` does not change reads of regular files. `O_NOCTTY` keeps an
+ * opened terminal device from becoming the controlling terminal. Both are
+ * undefined on Windows (which has neither), where `| undefined` adds nothing.
+ * The file is opened before its type is known, so that the type check applies
+ * to exactly the file that is read; a device file is closed again unread.
  */
-const READ_FLAGS = constants.O_RDONLY | constants.O_NONBLOCK;
+const READ_FLAGS = constants.O_RDONLY | constants.O_NONBLOCK | constants.O_NOCTTY;
 
 /** Outcome of {@link readRegularFile}. */
 export type RegularFileRead =
