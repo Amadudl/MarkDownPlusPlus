@@ -42,7 +42,7 @@ git -c core.quotePath=false ls-files --cached > "$tmp/files" || exit 1
 # ---------- Regel b ----------
 for f in opensource.md cleanup.md; do
   if ! has "$f"; then
-    err "$f fehlt im Wurzelordner (oder ist nicht mit 'git add' vorgemerkt). Vorlage: 80_Subbrains/Dev/90_System/Regeln.md, Abschnitt Unabhaengigkeit."
+    err "$f fehlt im Wurzelordner (oder ist nicht mit 'git add' vorgemerkt). Vorlage: 90_System/Hausordnung.md, Abschnitt „Unabhängigkeit“."
   fi
 done
 
